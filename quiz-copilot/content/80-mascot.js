@@ -17,6 +17,7 @@
   }
   .qc-bot[data-dragging="1"] { cursor: grabbing; }
   .qc-bot[data-dragging="1"] .qc-bot-body { transform: scale(1.06) rotate(-3deg); }
+  .qc-bot:active .qc-bot-body { transform: scale(.93); }
 
   .qc-bot-body {
     display: flex; flex-direction: column; align-items: center;
@@ -274,6 +275,7 @@
   const WAKE_R = 150;        // 睡着的它，鼠标走到这么近会惊醒
   const DIZZY_SPEED = 1200;  // 拖动速度超过这个值（px/s）会晕
   const DIZZY_WINDOW = 1600; // 判定画圈的时间窗
+  const DOUBLE_MS = 280;     // 两次点击间隔小于它算双击
 
   /* 待机时随机换的表情（权重加起来 0.52，剩下 48% 就是单纯眨个眼） */
   const IDLE_MOODS = [
@@ -299,6 +301,7 @@
   let pokeTimes = [];
   let hopTimer = null;
   let wanderTimer = null;
+  let clickTimer = null;
 
   function ensureStyle(shadow) {
     if (shadow.querySelector('style[data-qc-style="mascot"]')) return;
@@ -480,6 +483,14 @@
       if (el) delete el.dataset.hop;
       hopTimer = null;
     }, 540);
+  }
+
+  /* 双击：蹦一下 + 开心，不当成一键解题 */
+  function doubleTap() {
+    if (!el) return;
+    hop();
+    if (el.dataset.state === 'idle') setMood('happy', 800);
+    say('嘿嘿', 900, false);
   }
 
   function scheduleWander() {
@@ -682,14 +693,18 @@
         poke();
         return;
       }
-      if (Q.oneKeyFlow) Q.oneKeyFlow({ from: 'mascot' });
-    });
 
-    btn.addEventListener('dblclick', (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      hop();
-      if (el && el.dataset.state === 'idle') setMood('happy', 700);
+      // 单击要等一小会儿，确认不是双击的第二下
+      if (clickTimer) {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+        doubleTap();
+        return;
+      }
+      clickTimer = setTimeout(() => {
+        clickTimer = null;
+        if (Q.oneKeyFlow) Q.oneKeyFlow({ from: 'mascot' });
+      }, DOUBLE_MS);
     });
 
     btn.addEventListener('mouseenter', onEnter);
@@ -794,6 +809,7 @@
     stopFollow();
     if (hopTimer) { clearTimeout(hopTimer); hopTimer = null; }
     if (wanderTimer) { clearTimeout(wanderTimer); wanderTimer = null; }
+    if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
     if (rafId && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(rafId);
     rafId = 0;
     dragSamples = [];
