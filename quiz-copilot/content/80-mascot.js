@@ -276,6 +276,7 @@
   const DIZZY_SPEED = 1200;  // 拖动速度超过这个值（px/s）会晕
   const DIZZY_WINDOW = 1600; // 判定画圈的时间窗
   const DOUBLE_MS = 280;     // 两次点击间隔小于它算双击
+  const TAP_CHAIN_MS = 520;  // 这个时间内接着点，算同一串连击
 
   /* 待机时随机换的表情（权重加起来 0.52，剩下 48% 就是单纯眨个眼） */
   const IDLE_MOODS = [
@@ -302,6 +303,8 @@
   let hopTimer = null;
   let wanderTimer = null;
   let clickTimer = null;
+  let tapCount = 0;
+  let lastTapAt = 0;
 
   function ensureStyle(shadow) {
     if (shadow.querySelector('style[data-qc-style="mascot"]')) return;
@@ -483,6 +486,13 @@
       if (el) delete el.dataset.hop;
       hopTimer = null;
     }, 540);
+  }
+
+  /* 连点三下及以上：不高兴，不解题 */
+  function tripleTap() {
+    if (!el) return;
+    setMood('angry', 1000);
+    say('戳我干嘛…', 1300, false);
   }
 
   /* 双击：蹦一下 + 开心，不当成一键解题 */
@@ -694,17 +704,31 @@
         return;
       }
 
-      // 单击要等一小会儿，确认不是双击的第二下
+      // 连击串：520ms 内接着点算同一串，第二下蹦、第三下起一律不解题
+      const now = Date.now();
+      if (now - lastTapAt > TAP_CHAIN_MS) tapCount = 0;
+      tapCount++;
+      lastTapAt = now;
+
+      if (tapCount === 1) {
+        // 第一下：先不执行，留出错开双击的时间
+        if (clickTimer) clearTimeout(clickTimer);
+        clickTimer = setTimeout(() => {
+          clickTimer = null;
+          tapCount = 0;
+          if (Q.oneKeyFlow) Q.oneKeyFlow({ from: 'mascot' });
+        }, DOUBLE_MS);
+        return;
+      }
+
+      // 第二下起就不再解题了，把待执行的那一次按下取消
       if (clickTimer) {
         clearTimeout(clickTimer);
         clickTimer = null;
-        doubleTap();
-        return;
       }
-      clickTimer = setTimeout(() => {
-        clickTimer = null;
-        if (Q.oneKeyFlow) Q.oneKeyFlow({ from: 'mascot' });
-      }, DOUBLE_MS);
+
+      if (tapCount === 2) doubleTap();
+      else tripleTap();
     });
 
     btn.addEventListener('mouseenter', onEnter);
@@ -810,6 +834,8 @@
     if (hopTimer) { clearTimeout(hopTimer); hopTimer = null; }
     if (wanderTimer) { clearTimeout(wanderTimer); wanderTimer = null; }
     if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
+    tapCount = 0;
+    lastTapAt = 0;
     if (rafId && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(rafId);
     rafId = 0;
     dragSamples = [];
