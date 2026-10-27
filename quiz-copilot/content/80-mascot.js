@@ -94,23 +94,38 @@
     transform: translate(var(--qc-look-x, 0px), var(--qc-look-y, 0px));
   }
 
-  /* 晕：两只螺旋眼，整只轻轻摇 */
+  /* 晕：两只螺旋眼各转各的，整只轻轻摇 */
   .qc-bot-spiral {
     position: absolute; inset: 0;
     display: flex; align-items: center; justify-content: center; gap: 7px;
     opacity: 0; pointer-events: none;
   }
-  .qc-bot-spiral svg { width: 10px; height: 10px; display: block; }
+  .qc-bot-spiral svg {
+    width: 10px; height: 10px; display: block;
+    transform-origin: 50% 50%;
+  }
   .qc-bot-spiral path {
     fill: none; stroke: #fff; stroke-width: 1.25;
     stroke-linecap: round; stroke-linejoin: round;
   }
   .qc-bot[data-mood="dizzy"] .qc-bot-eyes { opacity: 0; }
-  .qc-bot[data-mood="dizzy"] .qc-bot-spiral {
-    opacity: 1;
-    animation: qc-bot-dizzy 1.2s linear infinite;
-  }
+  .qc-bot[data-mood="dizzy"] .qc-bot-spiral { opacity: 1; }
+  .qc-bot[data-mood="dizzy"] .qc-bot-spiral svg { animation: qc-bot-dizzy 1.1s linear infinite; }
+  /* 松手后靠惯性慢慢转，越转越慢 */
+  .qc-bot[data-mood="dizzy"][data-spin="slow"] .qc-bot-spiral svg { animation-duration: 2.4s; }
   .qc-bot[data-mood="dizzy"] .qc-bot-body { animation: qc-bot-wobble 1.1s ease-in-out infinite; }
+
+  /* 晕完：眼睛闭成 > <，原地甩甩头 */
+  .qc-bot[data-mood="daze"] .qc-bot-eye {
+    width: 6px; height: 6px; border-radius: 0; background: transparent;
+    border-top: 2px solid #fff; border-right: 2px solid #fff;
+    transform: rotate(45deg);
+  }
+  .qc-bot[data-mood="daze"] .qc-bot-eye:last-child {
+    border-right: 0; border-left: 2px solid #fff;
+    transform: rotate(-45deg);
+  }
+  .qc-bot[data-mood="daze"] .qc-bot-head { animation: qc-bot-headshake .36s ease-in-out infinite; }
 
   /* 双击 / 无聊时蹦一下 */
   .qc-bot[data-hop="1"] .qc-bot-body { animation: qc-bot-hop .52s cubic-bezier(.3,.8,.4,1); }
@@ -203,6 +218,11 @@
     100% { opacity: 0; transform: translate(10px, -16px) scale(1.05) }
   }
   @keyframes qc-bot-dizzy { to { transform: rotate(360deg) } }
+  @keyframes qc-bot-headshake {
+    0%, 100% { transform: rotate(0) }
+    22% { transform: rotate(-10deg) }
+    72% { transform: rotate(10deg) }
+  }
   @keyframes qc-bot-wobble {
     0%, 100% { transform: rotate(0) }
     25% { transform: rotate(-6deg) }
@@ -253,7 +273,7 @@
   @media (prefers-reduced-motion: reduce) {
     .qc-bot-body, .qc-bot-head, .qc-bot-eyes, .qc-bot-eye,
     .qc-bot-antenna::after, .qc-bot-tick path, .qc-bot-zzz i,
-    .qc-bot-spiral { animation: none !important; }
+    .qc-bot-spiral, .qc-bot-spiral svg { animation: none !important; }
     .qc-bot[data-state="done"] .qc-bot-tick path,
     .qc-bot[data-state="warn"] .qc-bot-tick path { stroke-dashoffset: 0; }
     .qc-bot[data-mood="sleepy"] .qc-bot-zzz i { opacity: .92; }
@@ -277,6 +297,9 @@
   const DIZZY_WINDOW = 1600; // 判定画圈的时间窗
   const DOUBLE_MS = 280;     // 两次点击间隔小于它算双击
   const TAP_CHAIN_MS = 520;  // 这个时间内接着点，算同一串连击
+  const TAP_GAP_MS = 220;    // 双击先等这么久，确认不是三击
+  const DIZZY_INERTIA = 1100; // 松手后靠惯性继续晕多久
+  const DAZE_MS = 950;       // 闭眼甩头的时长
 
   /* 待机时随机换的表情（权重加起来 0.52，剩下 48% 就是单纯眨个眼） */
   const IDLE_MOODS = [
@@ -303,7 +326,12 @@
   let hopTimer = null;
   let wanderTimer = null;
   let clickTimer = null;
+  let doubleTimer = null;
+  let settleTimer = null;
+  let dizzySettle = null;
+  let dizzyFallback = null;
   let tapCount = 0;
+  let doublePlayed = false;
   let lastTapAt = 0;
 
   function ensureStyle(shadow) {
@@ -447,10 +475,38 @@
   function makeDizzy() {
     const now = Date.now();
     if (now < dizzyUntil) return;
-    dizzyUntil = now + 3200;
+    dizzyUntil = now + 4200;
     dragSamples = [];
-    setMood('dizzy', 1700);
-    say('晕…', 1600, false);
+    if (el) delete el.dataset.spin;
+    // 不用定时器收尾：等松手后走「惯性 → 闭眼甩头 → 待机」
+    setMood('dizzy', 0);
+    say('晕…', 1500, false);
+    if (dizzyFallback) clearTimeout(dizzyFallback);
+    dizzyFallback = setTimeout(() => {
+      dizzyFallback = null;
+      if (el && el.dataset.mood === 'dizzy') runDizzyOut();
+    }, 6000);
+  }
+
+  /* 松手：螺旋先慢慢转一会儿（惯性），再闭眼甩头 */
+  function settleDizzy() {
+    if (!el || el.dataset.mood !== 'dizzy') return;
+    el.dataset.spin = 'slow';
+    if (dizzySettle) clearTimeout(dizzySettle);
+    dizzySettle = setTimeout(() => {
+      dizzySettle = null;
+      runDizzyOut();
+    }, DIZZY_INERTIA);
+  }
+
+  /* 收场：眼睛闭成 > <，原地甩两下头 */
+  function runDizzyOut() {
+    if (!el) return;
+    if (dizzySettle) { clearTimeout(dizzySettle); dizzySettle = null; }
+    if (dizzyFallback) { clearTimeout(dizzyFallback); dizzyFallback = null; }
+    delete el.dataset.spin;
+    setMood('daze', DAZE_MS);
+    say('……', DAZE_MS, false);
   }
 
   function feedDrag(e) {
@@ -503,39 +559,38 @@
     say('嘿嘿', 900, false);
   }
 
-  function scheduleWander() {
+  function scheduleWander(delay) {
     if (wanderTimer) clearTimeout(wanderTimer);
+    wanderTimer = null;
     if (prefersReduced()) return;
-    wanderTimer = setTimeout(wander, 20000 + Math.random() * 16000);
+    wanderTimer = setTimeout(wander, delay != null ? delay : 12000 + Math.random() * 14000);
+  }
+
+  /* 条件不满足就很快再试一次，别一等又是二十秒 */
+  function wanderLater() {
+    scheduleWander(2200 + Math.random() * 2800);
   }
 
   function wander() {
     wanderTimer = null;
-    if (!el || el.dataset.state !== 'idle' || el.dataset.mood || drag || tracking) {
-      scheduleWander();
-      return;
-    }
+    if (!el || el.dataset.state !== 'idle' || drag || tracking) return wanderLater();
+    if (el.dataset.mood === 'sleepy') return;   // 睡着了就老实待着
+    if (el.dataset.mood) return wanderLater();  // 正在做表情，等它做完
     try {
-      if (document.hidden) {
-        scheduleWander();
-        return;
-      }
+      if (document.hidden) return wanderLater();
     } catch (e) {}
 
     const r = el.getBoundingClientRect();
-    const p = clampPos(r.left + (Math.random() * 2 - 1) * 72, r.top + (Math.random() * 2 - 1) * 48);
-    if (Math.abs(p.left - r.left) < 6 && Math.abs(p.top - r.top) < 6) {
-      scheduleWander();
-      return;
-    }
+    const p = clampPos(r.left + (Math.random() * 2 - 1) * 120, r.top + (Math.random() * 2 - 1) * 80);
+    if (Math.abs(p.left - r.left) < 6 && Math.abs(p.top - r.top) < 6) return wanderLater();
 
     hop();
-    el.style.transition = 'left .55s cubic-bezier(.34,1.2,.64,1), top .55s cubic-bezier(.34,1.2,.64,1)';
+    el.style.transition = 'left .62s cubic-bezier(.34,1.2,.64,1), top .62s cubic-bezier(.34,1.2,.64,1)';
     moveTo(p.left, p.top);
     setTimeout(() => {
       if (el) el.style.transition = '';
-    }, 580);
-    setTimeout(savePos, 560);
+    }, 650);
+    setTimeout(savePos, 630);
     scheduleWander();
   }
 
@@ -585,8 +640,10 @@
     snapToEdge();
     savePos();
     if (el) {
-      // 刚被甩晕的话，别立刻换成笑脸
-      if (el.dataset.mood !== 'dizzy') {
+      // 刚被甩晕的话，走惯性 → 闭眼甩头，别立刻换笑脸
+      if (el.dataset.mood === 'dizzy') {
+        settleDizzy();
+      } else {
         setMood('happy', 900);
         say('放这儿啦', 1400, false);
       }
@@ -627,8 +684,14 @@
       if (m) setMood(m.k, m.ms);
     }, 5200);
     sleepTimer = setTimeout(() => {
-      if (el && el.dataset.state === 'idle' && !el.dataset.mood) setMood('sleepy', 0);
+      if (el && el.dataset.state === 'idle' && !el.dataset.mood) {
+        setMood('sleepy', 0);
+        // 睡了就别再惦记着到处蹦
+        if (wanderTimer) { clearTimeout(wanderTimer); wanderTimer = null; }
+      }
     }, 50000);
+    // 醒着的时候：隔一会儿挪一小段，别等太久
+    scheduleWander(7000 + Math.random() * 6000);
   }
 
   function stopIdle() {
@@ -706,7 +769,10 @@
 
       // 连击串：520ms 内接着点算同一串，第二下蹦、第三下起一律不解题
       const now = Date.now();
-      if (now - lastTapAt > TAP_CHAIN_MS) tapCount = 0;
+      if (now - lastTapAt > TAP_CHAIN_MS) {
+        tapCount = 0;
+        doublePlayed = false;
+      }
       tapCount++;
       lastTapAt = now;
 
@@ -716,6 +782,7 @@
         clickTimer = setTimeout(() => {
           clickTimer = null;
           tapCount = 0;
+          doublePlayed = false;
           if (Q.oneKeyFlow) Q.oneKeyFlow({ from: 'mascot' });
         }, DOUBLE_MS);
         return;
@@ -727,8 +794,22 @@
         clickTimer = null;
       }
 
-      if (tapCount === 2) doubleTap();
-      else tripleTap();
+      if (tapCount === 2) {
+        // 先别急着蹦：万一还有第三下，就只算「戳」，不先蹦一次
+        if (doubleTimer) clearTimeout(doubleTimer);
+        doubleTimer = setTimeout(() => {
+          doubleTimer = null;
+          doublePlayed = true;
+          doubleTap();
+        }, TAP_GAP_MS);
+        return;
+      }
+
+      // 第三下及以后
+      if (doubleTimer) { clearTimeout(doubleTimer); doubleTimer = null; }
+      // 已经蹦过了（这三下点得比较散）就别再凶一次，安静收场
+      if (doublePlayed) return;
+      tripleTap();
     });
 
     btn.addEventListener('mouseenter', onEnter);
@@ -757,7 +838,6 @@
 
     restorePos();
     startIdle();
-    scheduleWander();
     return el;
   }
 
@@ -809,8 +889,8 @@
 
   /* 走完流程后自动回待机；可点的「详情」气泡留着，等用户自己点 */
   function settleAfter(ms) {
-    if (idleTimer) clearTimeout(idleTimer);
-    idleTimer = setTimeout(() => {
+    if (settleTimer) clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => {
       if (el && (el.dataset.state === 'done' || el.dataset.state === 'warn' || el.dataset.state === 'error')) {
         el.dataset.state = 'idle';
         clearMood();
@@ -818,7 +898,7 @@
         if (b && b.dataset.act !== '1') say('', 0, false);
         startIdle();
       }
-      idleTimer = null;
+      settleTimer = null;
     }, ms || 2600);
   }
 
@@ -834,7 +914,12 @@
     if (hopTimer) { clearTimeout(hopTimer); hopTimer = null; }
     if (wanderTimer) { clearTimeout(wanderTimer); wanderTimer = null; }
     if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
+    if (doubleTimer) { clearTimeout(doubleTimer); doubleTimer = null; }
+    if (dizzySettle) { clearTimeout(dizzySettle); dizzySettle = null; }
+    if (dizzyFallback) { clearTimeout(dizzyFallback); dizzyFallback = null; }
+    if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
     tapCount = 0;
+    doublePlayed = false;
     lastTapAt = 0;
     if (rafId && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(rafId);
     rafId = 0;
@@ -848,5 +933,5 @@
     el = null;
   }
 
-  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, CSS };
+  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, wanderOnce: wander, CSS };
 })();
