@@ -78,39 +78,34 @@
   .qc-bot[data-mood="angry"] .qc-bot-eye { width: 7px; height: 7px; border-radius: 2px; }
   .qc-bot[data-mood="angry"] .qc-bot-eye:first-child { clip-path: polygon(0 0, 100% 45%, 100% 100%, 0 100%); }
   .qc-bot[data-mood="angry"] .qc-bot-eye:last-child { clip-path: polygon(0 45%, 100% 0, 100% 100%, 0 100%); }
-  /* 惊讶：又圆又大 */
-  .qc-bot[data-mood="surprised"] .qc-bot-eye { width: 7px; height: 11px; border-radius: 50%; }
+  /* 惊讶：眼睛瞪得又圆又大 */
+  .qc-bot[data-mood="surprised"] .qc-bot-eye { width: 8px; height: 12px; border-radius: 50%; }
   /* 困：两条细线 */
   .qc-bot[data-mood="sleepy"] .qc-bot-eye { height: 2.5px; border-radius: 2px; }
   /* 思考：眼珠往上瞟 */
   .qc-bot[data-mood="think"] .qc-bot-eye { transform: translateY(-1.5px); }
 
-  .qc-bot-mouth {
-    position: absolute; left: 50%; bottom: 6px;
-    width: 9px; height: 4px; margin-left: -4.5px;
-    opacity: 0; transition: opacity .16s;
+  /* 打瞌睡时头上飘 z z z */
+  .qc-bot-zzz {
+    position: absolute; right: -14px; top: -16px;
+    width: 26px; height: 28px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .25s;
   }
-  .qc-bot[data-mood="happy"] .qc-bot-mouth,
-  .qc-bot[data-mood="wink"] .qc-bot-mouth,
-  .qc-bot[data-mood="sad"] .qc-bot-mouth,
-  .qc-bot[data-mood="angry"] .qc-bot-mouth,
-  .qc-bot[data-mood="surprised"] .qc-bot-mouth { opacity: 1; }
-
-  .qc-bot[data-mood="happy"] .qc-bot-mouth,
-  .qc-bot[data-mood="wink"] .qc-bot-mouth {
-    height: 5px; border-bottom: 2px solid #fff; border-radius: 0 0 8px 8px;
+  .qc-bot[data-mood="sleepy"] .qc-bot-zzz { opacity: 1; }
+  .qc-bot-zzz i {
+    position: absolute; left: 0; bottom: 0;
+    font-style: normal; font-weight: 700; line-height: 1;
+    color: #eef4ff; text-shadow: 0 0 7px rgba(150,180,255,.95);
+    opacity: 0;
   }
-  .qc-bot[data-mood="sad"] .qc-bot-mouth {
-    height: 4px; border-top: 2px solid #fff; border-radius: 8px 8px 0 0;
-  }
-  .qc-bot[data-mood="angry"] .qc-bot-mouth {
-    width: 7px; height: 2px; margin-left: -3.5px;
-    border-top: 2px solid #fff; border-radius: 0;
-  }
-  .qc-bot[data-mood="surprised"] .qc-bot-mouth {
-    width: 5px; height: 5px; margin-left: -2.5px;
-    border: 2px solid #fff; border-radius: 50%;
-  }
+  .qc-bot-zzz i:nth-child(1) { font-size: 9px; }
+  .qc-bot-zzz i:nth-child(2) { font-size: 12px; left: 5px; }
+  .qc-bot-zzz i:nth-child(3) { font-size: 15px; left: 10px; }
+  .qc-bot[data-mood="sleepy"] .qc-bot-zzz i { animation: qc-bot-zzz 1.9s ease-out infinite; }
+  .qc-bot[data-mood="sleepy"] .qc-bot-zzz i:nth-child(1) { animation-delay: 0s; }
+  .qc-bot[data-mood="sleepy"] .qc-bot-zzz i:nth-child(2) { animation-delay: .45s; }
+  .qc-bot[data-mood="sleepy"] .qc-bot-zzz i:nth-child(3) { animation-delay: .9s; }
 
   .qc-bot-tick {
     position: absolute; inset: 0; margin: auto;
@@ -171,6 +166,12 @@
   }
   @keyframes qc-bot-draw { to { stroke-dashoffset: 0 } }
   @keyframes qc-bot-pulse { 0%, 100% { opacity: .35 } 50% { opacity: 1 } }
+  @keyframes qc-bot-zzz {
+    0% { opacity: 0; transform: translate(0, 2px) scale(.7) }
+    16% { opacity: 1 }
+    68% { opacity: .95 }
+    100% { opacity: 0; transform: translate(10px, -16px) scale(1.05) }
+  }
   @keyframes qc-bot-shake {
     0%, 100% { transform: translateX(0) }
     25% { transform: translateX(-3px) }
@@ -207,9 +208,13 @@
 
   @media (prefers-reduced-motion: reduce) {
     .qc-bot-body, .qc-bot-head, .qc-bot-eyes, .qc-bot-eye,
-    .qc-bot-antenna::after, .qc-bot-tick path { animation: none !important; }
+    .qc-bot-antenna::after, .qc-bot-tick path, .qc-bot-zzz i { animation: none !important; }
     .qc-bot[data-state="done"] .qc-bot-tick path,
     .qc-bot[data-state="warn"] .qc-bot-tick path { stroke-dashoffset: 0; }
+    .qc-bot[data-mood="sleepy"] .qc-bot-zzz i { opacity: .92; }
+    .qc-bot-zzz i:nth-child(1) { bottom: 0; }
+    .qc-bot-zzz i:nth-child(2) { bottom: 7px; }
+    .qc-bot-zzz i:nth-child(3) { bottom: 15px; }
   }
   `;
 
@@ -422,7 +427,7 @@
       '<span class="qc-bot-antenna"></span>' +
       '<span class="qc-bot-head">' +
       '<span class="qc-bot-eyes"><span class="qc-bot-eye"></span><span class="qc-bot-eye"></span></span>' +
-      '<span class="qc-bot-mouth"></span>' +
+      '<span class="qc-bot-zzz"><i>z</i><i>z</i><i>z</i></span>' +
       '<svg class="qc-bot-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5 L10 17 L18.5 7.5"/></svg>' +
       '</span></span>' +
       '<span class="qc-bot-bubble"></span>';
