@@ -1,0 +1,160 @@
+/* ============================================================
+ * 答题助手 QuizCopilot — 启动、快捷键、一键解题、消息路由
+ * 文件：content/90-main.js
+ * ============================================================ */
+(() => {
+  const Q = (window.__QC = window.__QC || {});
+  if (Q.__booted) return;
+  Q.__booted = true;
+
+  const { S, extractAll, openPanel, togglePanel, render, solve, fillAll, noQuestionHint } = Q;
+
+  let flowBusy = false;
+
+  /* ---------- 一键解题：读题 → 作答 →（自动填开着时）填入 ---------- */
+  /* 「自动填」开着：点完直接把答案写进页面。
+     关着：只算出答案，弹个气泡提示可以看详情。 */
+  async function oneKeyFlow(opts) {
+    const bot = Q.mascot;
+    if (!bot) return;
+
+    // 已经答完时，再点机器人 = 打开面板看答案
+    const st = bot.getState();
+    if ((st === 'done' || st === 'warn') && S.questions.length && !(opts && opts.redo)) {
+      openPanel();
+      render();
+      return;
+    }
+    if (flowBusy || S.busy) return;
+
+    flowBusy = true;
+    S.diag = '';
+    S.error = '';
+    try {
+      bot.setState('thinking');
+      bot.say('正在读题…', 0);
+      render();
+
+      const qs = extractAll();
+      if (!qs.length) {
+        bot.setState('error');
+        bot.say(noQuestionHint().slice(0, 30), 6000, true);
+        bot.settleAfter(7000);
+        return;
+      }
+
+      S.questions = qs;
+      render();
+      bot.say(`读到 ${qs.length} 题，作答中…`, 0);
+
+      // 作答阶段先别自动填，把「填」留成独立一步，节奏才看得见
+      await solve({ autoFill: false });
+
+      if (S.error) {
+        bot.setState('error');
+        bot.say('作答失败：' + String(S.error).slice(0, 22), 6000, true);
+        bot.settleAfter(7000);
+        return;
+      }
+
+      const answered = S.questions.filter((q) => q.answer).length;
+      if (!answered) {
+        bot.setState('error');
+        bot.say('没拿到答案', 6000, true);
+        bot.settleAfter(7000);
+        return;
+      }
+
+      // 自动填开着 → 直接写进页面
+      if (!S.autoFill) {
+        bot.setState('done');
+        bot.say(`答完 ${answered} 题，点这里看答案`, 0, true);
+        bot.settleAfter(4200);
+        return;
+      }
+
+      bot.say(`正在填入 ${answered} 题…`, 0);
+      const st2 = fillAll() || { ok: 0, total: answered, fail: 0 };
+      const total = st2.total || answered;
+
+      if (st2.fail) {
+        bot.setState('warn');
+        bot.say(`已填 ${st2.ok}/${total}，${st2.fail} 题需手动`, 0, true);
+        bot.settleAfter(4200);
+      } else {
+        bot.setState('done');
+        bot.say(`已填 ${st2.ok} 题，点这里核对`, 0, true);
+        bot.settleAfter(4200);
+      }
+    } catch (e) {
+      bot.setState('error');
+      bot.say(String((e && e.message) || e).slice(0, 30), 6000, true);
+      bot.settleAfter(7000);
+    } finally {
+      flowBusy = false;
+    }
+  }
+
+  Q.oneKeyFlow = oneKeyFlow;
+
+  /* ---------- 来自后台 / 弹窗的消息 ---------- */
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (!msg || typeof msg !== 'object') return;
+
+    if (msg.type === 'QC_TOGGLE_PANEL') {
+      togglePanel();
+      sendResponse({ ok: true, open: !!(S.panelEl && S.panelEl.isConnected) });
+      return true;
+    }
+
+    if (msg.type === 'QC_ONEKEY') {
+      oneKeyFlow();
+      sendResponse({ ok: true });
+      return true;
+    }
+
+    if (msg.type === 'QC_PING') {
+      sendResponse({ ok: true, hasPanel: !!(S.panelEl && S.panelEl.isConnected) });
+      return true;
+    }
+
+    if (msg.type === 'QC_START') {
+      openPanel();
+      S.questions = extractAll();
+      render();
+      if (S.questions.length) solve();
+      sendResponse({ ok: true, count: S.questions.length });
+      return true;
+    }
+  });
+
+  /* ---------- 启动 ---------- */
+  function boot() {
+    try {
+      chrome.storage.sync.get({ autoFill: true, showFab: true }, (cfg) => {
+        S.autoFill = !!cfg.autoFill;
+        S.showFab = cfg.showFab !== false;
+        if (Q.mascot) Q.mascot.mount();
+      });
+    } catch (e) {}
+
+    try {
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== 'sync') return;
+        if (changes.autoFill) S.autoFill = !!changes.autoFill.newValue;
+        if (changes.showFab) {
+          S.showFab = changes.showFab.newValue !== false;
+          if (!Q.mascot) return;
+          if (S.showFab) Q.mascot.mount();
+          Q.mascot.show(S.showFab);
+        }
+      });
+    } catch (e) {}
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
+})();

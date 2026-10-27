@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>答题助手 · 设置</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    width: 380px;
+    margin: 0;
+    padding: 0 0 12px;
+    background: #14161c;
+    color: #e6e8eb;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .head {
+    display: flex; align-items: center; gap: 9px;
+    padding: 13px 15px;
+    background: linear-gradient(180deg, #1c1f27, #171a21);
+    border-bottom: 1px solid rgba(255,255,255,.07);
+  }
+  .logo {
+    width: 22px; height: 22px; border-radius: 7px;
+    background: linear-gradient(135deg,#4f8cff,#7c5cff);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+  }
+  .head h1 { font-size: 13.5px; margin: 0; font-weight: 600; }
+  .head .tag { margin-left: auto; font-size: 10.5px; color: #7f8695; }
+
+  .sec { padding: 12px 15px 4px; }
+  .sec + .sec { border-top: 1px solid rgba(255,255,255,.06); }
+  .sec h2 {
+    font-size: 11px; font-weight: 600; color: #7f8695;
+    text-transform: uppercase; letter-spacing: .6px;
+    margin: 0 0 9px;
+  }
+  label.field { display: block; margin-bottom: 10px; }
+  label.field .lb {
+    display: block; font-size: 11.5px; color: #98a0b0; margin-bottom: 4px;
+  }
+  input[type=text], input[type=password], select {
+    width: 100%; padding: 7px 9px;
+    background: #1a1d25;
+    border: 1px solid rgba(255,255,255,.11);
+    border-radius: 7px;
+    color: #e6e8eb; font-size: 12.5px; font-family: inherit;
+    outline: none;
+  }
+  input:focus, select:focus { border-color: rgba(79,140,255,.6); background: #1d2130; }
+  select { cursor: pointer; }
+  input::placeholder { color: #5c6472; }
+
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1 1 0; min-width: 0; }
+
+  .btn {
+    font-family: inherit; font-size: 12.5px; cursor: pointer;
+    padding: 7px 12px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.05);
+    color: #d7dbe2; transition: .12s;
+  }
+  .btn:hover { background: rgba(255,255,255,.11); }
+  .btn.primary {
+    background: linear-gradient(135deg,#3b7bff,#5b5bf0);
+    border-color: transparent; color: #fff; font-weight: 600;
+    width: 100%;
+  }
+  .btn.primary:hover { filter: brightness(1.12); }
+  .btn:disabled { opacity: .55; cursor: default; }
+
+  .switch-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0; gap: 12px;
+  }
+  .switch-row .txt { font-size: 12.5px; }
+  .switch-row .hint { font-size: 11px; color: #6f7787; margin-top: 1px; line-height: 1.4; }
+  .sw {
+    position: relative; width: 40px; height: 22px; flex: 0 0 auto;
+    border-radius: 11px; background: #2a2f3a; cursor: pointer;
+    border: none; transition: .18s; padding: 0;
+  }
+  .sw::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #8b93a3; transition: .18s;
+  }
+  .sw.on { background: rgba(79,140,255,.35); }
+  .sw.on::after { left: 20px; background: #5b96ff; }
+
+  .status {
+    font-size: 11.5px; padding: 7px 9px; border-radius: 7px;
+    margin-top: 9px; display: none; line-height: 1.5;
+  }
+  .status.show { display: block; }
+  .status.ok { background: rgba(52,211,153,.1); color: #6ee7a8; border: 1px solid rgba(52,211,153,.28); }
+  .status.err { background: rgba(248,113,113,.1); color: #fca5a5; border: 1px solid rgba(248,113,113,.3); }
+  .status.info { background: rgba(96,165,250,.1); color: #93c5fd; border: 1px solid rgba(96,165,250,.28); }
+
+  .tip {
+    font-size: 11px; color: #6f7787; line-height: 1.6;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 8px; padding: 9px 10px; margin-top: 4px;
+  }
+  .tip b { color: #98a0b0; font-weight: 600; }
+  .tip a { color: #7fb0ff; text-decoration: none; }
+  kbd {
+    background: #22262f; border: 1px solid rgba(255,255,255,.14);
+    border-radius: 4px; padding: 0 4px; font-size: 10.5px;
+    font-family: ui-monospace, monospace; color: #c9cfd9;
+  }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="logo">AI</div>
+  <h1>答题助手</h1>
+  <span class="tag" id="verTag">QuizCopilot</span>
+</div>
+
+<div class="sec">
+  <h2>AI 通道</h2>
+
+  <label class="field">
+    <span class="lb">服务商（填好会自动带出地址和模型）</span>
+    <select id="provider">
+      <option value="deepseek">DeepSeek（便宜，推荐）</option>
+      <option value="dashscope">阿里云百炼 / 通义千问</option>
+      <option value="moonshot">Moonshot / Kimi</option>
+      <option value="zhipu">智谱 GLM</option>
+      <option value="siliconflow">硅基流动</option>
+      <option value="openai">OpenAI</option>
+      <option value="custom">自定义（任何 OpenAI 兼容接口）</option>
+    </select>
+  </label>
+
+  <label class="field">
+    <span class="lb">API Key</span>
+    <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off" spellcheck="false">
+  </label>
+
+  <div class="row">
+    <label class="field" style="flex:1.7">
+      <span class="lb">Base URL</span>
+      <input type="text" id="baseUrl" spellcheck="false">
+    </label>
+    <label class="field" style="flex:1">
+      <span class="lb">模型</span>
+      <input type="text" id="model" spellcheck="false">
+    </label>
+  </div>
+
+  <div class="row" style="margin-bottom:2px">
+    <button class="btn" id="save" style="flex:1">保存</button>
+    <button class="btn" id="test" style="flex:1">测试连接</button>
+  </div>
+
+  <div class="status" id="testStatus"></div>
+</div>
+
+<div class="sec">
+  <h2>行为</h2>
+
+  <div class="switch-row">
+    <div>
+      <div class="txt">一键解题后自动填入</div>
+      <div class="hint">开着：点机器人 = 读完直接写进页面。关掉：只出答案，点气泡看详情</div>
+    </div>
+    <button class="sw" id="swAuto" aria-label="自动填入"></button>
+  </div>
+
+  <div class="switch-row">
+    <div>
+      <div class="txt">页面右下角显示小机器人</div>
+      <div class="hint">每个网页都能看到它；关掉后仍可用快捷键</div>
+    </div>
+    <button class="sw" id="swFab" aria-label="小机器人"></button>
+  </div>
+</div>
+
+<div class="sec">
+  <h2>使用</h2>
+  <div class="row" style="margin-bottom:10px">
+    <button class="btn primary" id="oneKey" style="flex:1">一键解题</button>
+    <button class="btn" id="openPanel" style="flex:1">打开面板</button>
+  </div>
+  <div class="tip">
+    <b>一键解题：</b>点右下角小机器人，或按 <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd>。
+    它会自己读题、作答、填进页面，完事打个绿勾。<br>
+    <b>看答案：</b>按 <kbd>Alt</kbd>+<kbd>Q</kbd> 打开面板；答完后点机器人也能打开。<br>
+    <b>支持：</b>单选 / 多选 / 判断 / 填空 / 匹配题。<br>
+    <b>读不到题？</b>先用鼠标框选题目文字，再点面板里的「读取选中文字」。<br>
+    <b>更新后没生效？</b>去 <code id="extUrl" style="font-family:ui-monospace,monospace;color:#9fc4ff">edge://extensions</code> 点扩展卡片上的 ↻，再刷新页面。<br>
+    <b>提醒：</b>只用于练习、开卷或内部培训。需要本人独立完成的考试，请别用。
+  </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>答题助手 QuizCopilot · 安装说明</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 48px 20px 80px;
+    background: radial-gradient(1200px 600px at 50% -100px, #1b2333 0%, #0d0f14 55%, #0a0b0f 100%);
+    color: #e6e8eb;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 15px; line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 44px; }
+  .logo {
+    width: 56px; height: 56px; border-radius: 16px; margin: 0 auto 18px;
+    background: linear-gradient(135deg, #4f8cff, #7c5cff);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -1px;
+    box-shadow: 0 12px 32px rgba(79,140,255,.35);
+  }
+  h1 { font-size: 30px; margin: 0 0 10px; letter-spacing: -.5px; font-weight: 700; }
+  .sub { color: #8b93a3; font-size: 14.5px; margin: 0; }
+
+  .card {
+    background: rgba(255,255,255,.028);
+    border: 1px solid rgba(255,255,255,.085);
+    border-radius: 16px;
+    padding: 26px 28px;
+    margin-bottom: 18px;
+    backdrop-filter: blur(6px);
+  }
+  .card h2 {
+    font-size: 17px; margin: 0 0 16px; font-weight: 650;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .num {
+    width: 26px; height: 26px; border-radius: 8px; flex: 0 0 auto;
+    background: rgba(79,140,255,.16); color: #7ba7ff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+  }
+  p { margin: 0 0 12px; color: #c2c8d2; }
+  p:last-child { margin-bottom: 0; }
+  ol, ul { margin: 0 0 12px; padding-left: 22px; color: #c2c8d2; }
+  li { margin-bottom: 7px; }
+  li::marker { color: #5f6775; }
+
+  code {
+    background: #1c2029; border: 1px solid rgba(255,255,255,.1);
+    border-radius: 6px; padding: 2px 7px;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 13px; color: #9fc4ff;
+  }
+  kbd {
+    background: #232833; border: 1px solid rgba(255,255,255,.16);
+    border-bottom-width: 2px; border-radius: 5px; padding: 1px 7px;
+    font-family: ui-monospace, monospace; font-size: 12.5px; color: #d7dbe2;
+  }
+  a { color: #7fb0ff; text-decoration: none; border-bottom: 1px solid rgba(127,176,255,.3); }
+  a:hover { border-bottom-color: #7fb0ff; }
+
+  .path {
+    display: flex; align-items: center; gap: 10px;
+    background: #0f1218; border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px; padding: 12px 14px; margin: 12px 0 6px;
+  }
+  .path span {
+    font-family: ui-monospace, Consolas, monospace; font-size: 13px;
+    color: #a8c8ff; word-break: break-all; flex: 1;
+  }
+  .copy {
+    flex: 0 0 auto; cursor: pointer; font-family: inherit; font-size: 12px;
+    padding: 5px 11px; border-radius: 7px; color: #cfe0ff;
+    background: rgba(79,140,255,.15); border: 1px solid rgba(79,140,255,.35);
+    transition: .15s;
+  }
+  .copy:hover { background: rgba(79,140,255,.28); }
+
+  .note {
+    border-left: 3px solid rgba(251,191,36,.6);
+    background: rgba(251,191,36,.06);
+    border-radius: 0 10px 10px 0;
+    padding: 14px 18px; margin: 16px 0;
+    font-size: 14px; color: #d9d2bd;
+  }
+  .note b { color: #fbbf24; }
+  .good {
+    border-left-color: rgba(52,211,153,.6);
+    background: rgba(52,211,153,.06); color: #c6e8d9;
+  }
+  .good b { color: #34d399; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,.07); vertical-align: top; }
+  th { color: #8b93a3; font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: .5px; }
+  td:first-child { color: #9fc4ff; font-family: ui-monospace, monospace; font-size: 13px; white-space: nowrap; }
+  td { color: #c2c8d2; }
+
+  .flow { display: flex; gap: 10px; margin: 16px 0 4px; flex-wrap: wrap; }
+  .step {
+    flex: 1 1 150px; background: #12151c; border: 1px solid rgba(255,255,255,.08);
+    border-radius: 10px; padding: 13px 14px;
+  }
+  .step .k { font-size: 11px; color: #5f6775; letter-spacing: .5px; margin-bottom: 5px; }
+  .step .v { font-size: 13.5px; color: #d7dbe2; }
+
+  footer { text-align: center; color: #4f5766; font-size: 12.5px; margin-top: 34px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">AI</div>
+    <h1>答题助手 QuizCopilot</h1>
+    <p class="sub">自动读取网页题目，AI 给出答案和解析，可选一键勾选 / 填入</p>
+  </header>
+
+  <div class="card">
+    <h2>它做什么</h2>
+    <p>在答题页面上按一下，插件会把页面里的题干和 A/B/C/D 选项抽出来，一次性发给模型，答案和解析直接显示在右侧面板里。不用再复制粘贴、来回切窗口。</p>
+    <div class="flow">
+      <div class="step"><div class="k">STEP 1</div><div class="v">读取页面题目</div></div>
+      <div class="step"><div class="k">STEP 2</div><div class="v">整卷一次发给 AI</div></div>
+      <div class="step"><div class="k">STEP 3</div><div class="v">显示答案 + 解析</div></div>
+      <div class="step"><div class="k">STEP 4</div><div class="v">你确认后勾选提交</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">1</span>加载插件（一次性）</h2>
+    <div class="note good" style="margin-top:0">
+      <b>Edge 用户看这里。</b>地址是 <code>edge://extensions</code>，<b>不是</b> chrome://extensions —— 后者在 Edge 里打不开或跳空白页，这是最容易卡住的一步。
+    </div>
+    <p style="margin-top:16px"><b>Microsoft Edge：</b></p>
+    <ol>
+      <li>地址栏输入 <code>edge://extensions</code> 回车</li>
+      <li>打开<b>左侧栏</b>的「开发人员模式」开关</li>
+      <li>点页面上的 <b>加载解压缩的扩展</b></li>
+      <li>选中下面这个文件夹</li>
+      <li>回到工具栏，点拼图图标，把「答题助手」<b>固定</b>出来</li>
+    </ol>
+    <p style="margin-top:14px"><b>Google Chrome：</b></p>
+    <ol>
+      <li>地址栏输入 <code>chrome://extensions</code> 回车</li>
+      <li>打开<b>右上角</b>的「开发者模式」开关</li>
+      <li>点 <b>加载已解压的扩展程序</b>，选中下面这个文件夹</li>
+    </ol>
+    <div class="path">
+      <span id="p">（解压目录）\quiz-copilot</span>
+      <button class="copy" id="btn">复制路径</button>
+    </div>
+    <p style="font-size:13.5px;color:#7f8695">装好后工具栏会出现一个蓝色的 <b>AI</b> 图标。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>怎么确认更新已经生效</h2>
+    <p>面板标题右边有一个小徽标，写着当前版本号，例如 <code>v1.10.0</code>。这个数字是插件运行时直接读自己 manifest 得来的，不会骗人。</p>
+    <p><b>如果你看到的还是旧版本号，或者工具栏里没有「诊断」按钮</b>，说明页面里跑的还是旧代码，按这个顺序操作：</p>
+    <ol>
+      <li>地址栏输入 <code>edge://extensions</code>（Chrome 用 <code>chrome://extensions</code>）</li>
+      <li>找到「答题助手」卡片，点上面的<b>刷新图标 ↻</b>（Edge 中文版可能显示为「重新加载」）</li>
+      <li>回到答题页面，按 <kbd>F5</kbd> 刷新</li>
+      <li>再打开面板，确认徽标上的版本号变了</li>
+    </ol>
+    <div class="note">
+      <b>只按 F5 是不够的。</b>扩展本身没有重新加载，页面里注入的还是旧脚本。必须先刷扩展，再刷页面。这是「明明改好了却还是老样子」最常见的原因。<br><br>
+      刷新图标藏在卡片上，鼠标移上去才会明显显示。实在找不到，就把这张卡片删掉，重新「加载解压缩的扩展」一次。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>填 API Key</h2>
+    <p>点工具栏的 AI 图标，在弹出的设置页里操作：</p>
+    <ol>
+      <li>服务商选 <b>DeepSeek</b>（已经预填好地址和模型，不用改）</li>
+      <li>把 API Key 粘进去</li>
+      <li>点 <b>测试连接</b>，看到「连接正常」就说明通了</li>
+      <li>点 <b>保存</b></li>
+    </ol>
+    <p>还没有 Key？去 <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noreferrer">platform.deepseek.com</a> 注册，创建一个就行。充 10 块钱能用很久——答一份 20 题的卷子大约几分钱。</p>
+    <div class="note">
+      <b>想用别的模型？</b>设置页里的服务商下拉框已经内置了通义千问、Kimi、智谱、硅基流动、OpenAI 的地址。选 <b>自定义</b> 的话，任何 OpenAI 兼容接口（Base URL + 模型名）都能接。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>支持哪些题</h2>
+    <table>
+      <tr><th>题型</th><th>怎么认出来的</th><th>能否自动填</th></tr>
+      <tr><td>单选</td><td>radio 选项</td><td>能</td></tr>
+      <tr><td>多选</td><td>checkbox 选项</td><td>能（会顺手取消多勾的）</td></tr>
+      <tr><td>判断</td><td>选项是「正确/错误」「对/错」「是/否」</td><td>能</td></tr>
+      <tr><td>填空</td><td>文本框、数字框，或题干里的 ____ 横线</td><td>能（一题多空按顺序填）</td></tr>
+      <tr><td>表格 / 矩阵</td><td>一张表，每格一个输入框（问卷星的矩阵题）</td><td>能，按行从左到右填</td></tr>
+      <tr><td>匹配</td><td>左右两列，右列是下拉框</td><td>能，但有条件 —— 见下方说明</td></tr>
+      <tr><td>简答 / 论述</td><td>大文本框</td><td>不处理，避开不动</td></tr>
+    </table>
+    <div class="note" style="margin-top:14px">
+      <b>匹配题的限制：</b>插件把左列每一项的文字 / 图片文件名 / alt 属性读出来交给模型。
+      如果左列是<b>纯图标</b>且图片既没有 alt、文件名也没意义（比如 <code>image1.png</code>），
+      模型看不见图标长什么样，就只能瞎猜 —— 这是文字模型的硬限制，不是 bug。<br>
+      好在很多题库的图片文件名是可读的（<code>linkedin.png</code>、<code>twitter-bird.png</code>），这种能推出来。
+    </div>
+    <p style="margin-top:14px">填空题如果一题有多个空，模型会按横线出现的先后顺序作答，几个答案之间用 <code>|||</code> 隔开，插件再逐个填进去。多空的卡片顶部会显示「2 空」这样的标记，展开能看到每个空的具体答案。</p>
+    <p><b>表格题</b>（一张表、每格一个输入框，问卷星的矩阵题就是这种）会按「第 1 行从左到右 → 第 2 行……」的顺序填。卡片上会写「表格」并列出每行的标签。</p>
+    <div class="note">
+      <b>个人信息题不会被瞎填。</b>作息时间、收入、身份证号这类只有你自己知道的数据，模型给不出答案时
+      answer 会是空的；如果它一边说「无具体信息」一边给了个数字，插件也会把这个数字丢掉，不会替你填进页面。
+    </div>
+    <p style="font-size:13.5px;color:#7f8695">搜索框、登录框、姓名/学号/邮箱这类个人信息字段会被主动跳过，不会被当成填空题乱填。</p>
+    <p style="font-size:13.5px;color:#7f8695">高校常用的 Moodle 一类系统，选项的 name 是逐个独立的（<code>q4:1_choice0</code>、<code>q4:1_choice1</code>…），插件会按「就近容器」把它们并回同一题，不会拆成一堆单选题。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>开始用</h2>
+    <ol>
+      <li>打开答题页面，<b>刷新一次</b>（插件是刚装的，已有标签页里还没生效）</li>
+      <li>右下角会出现一个<b>小机器人</b></li>
+      <li><b>点它</b>，或者按 <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>Q</kbd> —— 它会自己读题、作答、填进页面</li>
+      <li>看完想核对，按 <kbd>Alt</kbd> + <kbd>Q</kbd> 打开面板，逐题看答案和解析</li>
+    </ol>
+    <div class="note good">
+      <b>「自动填」开着的时候，点一下就直接写进页面。</b>填完它会报数字：「已填 6 题」，
+      有没填上会说「已填 5/6，1 题需手动」。关掉自动填，就只算出答案，弹个气泡让你点开看。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>小机器人</h2>
+    <p>右下角那个小机器人是常驻的，正常看网页时也在。它会眨眼、左右张望、甩甩头，还会换表情：
+      开心时眼睛眯成两道弯、委屈时外眼角垂下来、不高兴时内眼角压下来、没人理 50 秒就打瞌睡。</p>
+    <table>
+      <tr><th>操作</th><th>效果</th></tr>
+      <tr><td><b>按住拖动</b></td><td>拖到页面任何位置，松手就待在那儿，下次打开还在那儿</td></tr>
+      <tr><td>点一下</td><td>一键解题：读题 → 作答 →（自动填开着时）写进页面 → 打个勾</td></tr>
+      <tr><td><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd></td><td>同一件事，不用鼠标</td></tr>
+      <tr><td>点气泡</td><td>答完后气泡写「已填 N 题，点这里核对」，点它直接开面板看逐题解析</td></tr>
+      <tr><td><kbd>Alt</kbd>+<kbd>Q</kbd></td><td>打开 / 收起答题面板</td></tr>
+    </table>
+    <p style="margin-top:14px">五种状态：</p>
+    <table>
+      <tr><td>待机</td><td>蓝色，眨眼张望；鼠标移上去会笑一下</td></tr>
+      <tr><td>思考</td><td>眼睛脉动、天线闪，气泡写「正在读题 / 读到 N 题作答中」</td></tr>
+      <tr><td>全部填好</td><td>变绿，对勾一笔画出来，气泡写「已填 N 题」</td></tr>
+      <tr><td>有几题没填上</td><td>琥珀色 + 对勾，气泡写「已填 5/6，1 题需手动」</td></tr>
+      <tr><td>出错</td><td>变红、委屈脸、抖一下，气泡写原因（没读到题 / 网络失败）</td></tr>
+    </table>
+    <p style="font-size:13.5px;color:#7f8695">嫌它占地方？设置页关掉「页面右下角显示小机器人」，快捷键照样能用。
+      系统开了「减少动态效果」时，所有小动作会自动停掉，只保留状态变色。</p>
+  </div>
+
+  <div class="card">
+    <h2>读不到题目？先点「诊断」</h2>
+    <p>面板最右边有一个 <b>诊断</b> 按钮。点一下，它会列出：</p>
+    <ul>
+      <li>页面上有多少个输入框、多少个单选项</li>
+      <li>哪些输入框被跳过了，以及<b>具体原因</b>（太宽、命中搜索关键词、在登录表单里…）</li>
+      <li>通过初筛的输入框，被归到了什么题干下面</li>
+      <li>最终识别出几道题</li>
+    </ul>
+    <p>点「复制全部」把这段内容发我，就能精确定位问题，不用猜。</p>
+    <div class="note">
+      <b>常见原因，按出现频率排：</b><br>
+      0. <b>你打开的不是测验页。</b>两种常见情况：<br>
+         · <b>答卷回顾页</b>（地址带 <code>review.php</code>）：交过卷之后再看，所有答案框都是只读的，页面本身就不给作答入口。要做题请重新进入测验，地址变成 <code>attempt.php</code> 才对。<br>
+         · <b>课程活动列表页</b>（地址带 <code>course/view.php</code>）：这里只有「Play Video」「Download…」这类学习任务，旁边的勾选框是<b>完成状态</b>，不是选项。请点进标着 <b>Quiz</b> 的那一项。  <br>
+      1. 题目在 <b>跨域 iframe</b> 里 —— 这种情况下任何扩展都读不到，只能把题目页单独打开，或者用「读取选中文字」。<br>
+      2. 题目由 <b>Shadow DOM</b> 渲染 —— 同样读不到，用「读取选中文字」。<br>
+      3. 输入框被我的过滤规则误杀 —— 诊断里会写清楚是哪条规则，告诉我就能放宽。<br>
+      4. 题目还没渲染出来 —— 翻到那一页再读。
+    </div>
+    <p style="font-size:13.5px;color:#7f8695">诊断的第一行就是<b>页面类型</b>，直接告诉你当前是答题页还是回看页。</p>
+  </div>
+
+  <div class="card">
+    <h2>其他可以试的办法</h2>
+    <ol>
+      <li><b>先让题目显示出来。</b>很多答题页是分页或折叠的，没渲染的 DOM 读不到。翻到题目那一页再读取。</li>
+      <li><b>用「读取选中文字」。</b>鼠标框选题目和选项（一次可以框好几题），再点面板里的这个按钮。这条路径几乎什么页面都能过。</li>
+      <li><b>刷新页面</b>。如果提示「扩展刚被更新」，按 F5 就好。</li>
+      <li><b>填空题要求输入框可见。</b>空位在屏外或被折叠时识别不到，滚到那一题再读取。</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>Edge 专属的四个坑</h2>
+    <table>
+      <tr><th>现象</th><th>原因与处理</th></tr>
+      <tr><td>chrome://extensions 打不开</td><td>Edge 不支持这个地址，用 <code>edge://extensions</code>。这是最常见的一个。</td></tr>
+      <tr><td>Alt+Q 没反应</td><td>和别的扩展或输入法抢了同一个快捷键。去 <code>edge://extensions/shortcuts</code> 改成别的组合，或者直接点页面右下角的悬浮 AI 按钮。</td></tr>
+      <tr><td>重启 Edge 后插件没了</td><td>Edge 偶尔会禁用「非商店来源」的扩展。去 <code>edge://extensions</code> 把它重新打开即可，不用重装。</td></tr>
+      <tr><td>更新后还是老样子</td><td>没在扩展页点 ↻ 重新加载。只按页面 F5 不算更新，见上面第 2 步。</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>去哪测试</h2>
+
+    <p><b>1. 本地测试卷（先跑这个）</b></p>
+    <p>工作区根目录的 <code>本地测试卷.html</code>，双击用 Edge 打开即可。里面埋了 6 道题，覆盖单选、多选、判断、单空、多空、Moodle 式独立命名，还特意放了搜索框和「姓名 / 学号」输入框当诱饵。</p>
+    <p>正确表现：<b>读出 6 道题</b>。如果读出 9 道（把搜索框、姓名框也当成题），或者第 6 题被拆成 4 道，就是分组逻辑出了问题。页面底部有个折叠区，点开是对照答案。</p>
+    <div class="note">
+      本地文件默认禁止扩展注入，要先到 <code>edge://extensions</code> → 答题助手 → <b>详细信息</b>，打开「<b>允许访问文件 URL</b>」，再刷新本页。
+    </div>
+
+    <p style="margin-top:18px"><b>2. Moodle 官方演示站（结构和你学校的一致）</b></p>
+    <p>这是最接近你实际场景的测试环境，用的是同一套 Moodle 代码：</p>
+    <p style="margin-top:12px"><b>school.moodledemo.net</b>（Mount Orange，模拟一所完整学校）</p>
+    <ol>
+      <li>打开 <a href="https://school.moodledemo.net/login/index.php" target="_blank" rel="noreferrer">school.moodledemo.net/login/index.php</a></li>
+      <li>用学生账号登录：用户名 <code>student</code>，密码 <code>moodle26</code></li>
+      <li>登录后点顶部 <b>My courses</b>，随便进一门课</li>
+      <li>在课程里找标着 <b>Quiz</b> 的活动，点进去，再点 <b>Attempt quiz now</b></li>
+      <li>地址栏变成 <code>attempt.php?attempt=…</code> 就对了，这时按 <kbd>Alt</kbd>+<kbd>Q</kbd></li>
+    </ol>
+    <p style="margin-top:12px"><b>sandbox.moodledemo.net</b>（空白沙盒，可以自己出题）</p>
+    <p>账号 <code>admin</code> / <code>manager</code> / <code>teacher</code> / <code>student</code>，密码以登录页显示的为准。用 teacher 身份建一道测验、加几种题型，再用 student 身份做，能测到你想要的结构。</p>
+    <p style="font-size:13.5px;color:#7f8695">
+      密码会随官方更新变化（moodle25 → moodle26 → …），如果登不上，看登录页底部「log in with the role of」那里写的当前密码。<br>
+      两个站每小时整点重置，做一半会被清掉，别在里面填任何真实个人信息。
+    </p>
+
+    <p style="margin-top:18px"><b>3. 考试酷（中文题干，结构完全不同的对照）</b></p>
+    <p><a href="https://www.examcoo.com/index/ku" target="_blank" rel="noreferrer">examcoo.com/index/ku</a> —— 公共题库中心，不用注册就能做题。进去任选一份试卷，点「<b>测试</b>」进入正式答题界面，那里才是带选项控件的页面（「查阅」模式只是把答案摊开给你看，测不出东西）。</p>
+    <p style="font-size:13.5px;color:#7f8695">用它主要是验证中文题干、以及非 Moodle 的页面结构。国内访问快。</p>
+
+    <div class="note good">
+      <b>建议顺序：</b>本地测试卷 → 确认 6 道题读对 → Moodle 演示站 → 最后再回答题的真实课程页。
+      一步步来，出问题时能立刻知道是哪一层坏掉。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>报错对照</h2>
+    <table>
+      <tr><th>提示</th><th>含义与处理</th></tr>
+      <tr><td>401 / 403</td><td>Key 填错了，或者这个 Key 没有该模型的权限。回设置页重新粘一次。</td></tr>
+      <tr><td>402</td><td>账户余额用完了，去服务商后台充值。</td></tr>
+      <tr><td>404</td><td>Base URL 末尾少了 <code>/v1</code>，或者模型名拼错了。</td></tr>
+      <tr><td>429</td><td>请求太频繁，等十几秒再点一次。</td></tr>
+      <tr><td>没有读到题目</td><td>见上一节，优先用「读取选中文字」。</td></tr>
+      <tr><td>点了没勾上</td><td>页面用自定义组件拦截了点击，属于少数情况，看到答案后手动点一下即可。</td></tr>
+      <tr><td>填空填不上</td><td>输入框可能不在可视区域、被页面禁用，或这题本来就是纯图文形式没有真输入框。看答案手动填即可。</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>说句实话</h2>
+    <p>这东西适合用在练习卷、开卷测验、公司内部培训考试这类<b>允许查资料</b>的场景——它只是把「查资料」这一步自动化了。</p>
+    <p>需要本人独立完成的正式考试（资格考试、学历考试、招聘笔试）别用它。那些平台大多有行为检测，被判定作弊的代价远大于省下的那点时间。答案也会错，主观题尤其不可靠，最终核对的责任还是在你。</p>
+  </div>
+
+  <footer>QuizCopilot v1.10.0 · 纯本地运行，Key 只存在你的浏览器里，不经过任何第三方服务器</footer>
+</div>
+
+<script>
+  /* 路径从当前文件位置推出来，不在源码里写死任何人的目录 */
+  (function () {
+    try {
+      var p = decodeURIComponent(location.pathname);
+      if (/^\/[A-Za-z]:\//.test(p)) {
+        p = p.slice(1).replace(/\//g, '\\');
+        var i = p.lastIndexOf('\\');
+        if (i > 0) document.getElementById('p').textContent = p.slice(0, i) + '\\quiz-copilot';
+      }
+    } catch (e) {}
+  })();
+
+  document.getElementById('btn').addEventListener('click', async () => {
+    const text = document.getElementById('p').textContent;
+    const btn = document.getElementById('btn');
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+    }
+    btn.textContent = '已复制';
+    setTimeout(() => { btn.textContent = '复制路径'; }, 1600);
+  });
+</script>
+</body>
+</html>

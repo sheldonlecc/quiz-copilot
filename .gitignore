@@ -1,0 +1,19 @@
+# 工作区内部数据，不提交
+.workbuddy/
+
+# 临时文件
+_thumbs/
+*.tmp
+*.log
+_s*.html
+_pet*.png
+_faces*.png
+_shot*.png
+_gen*.js
+
+# 依赖
+node_modules/
+
+# 系统
+.DS_Store
+Thumbs.db
