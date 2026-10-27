@@ -96,6 +96,7 @@
   }
 
   Q.oneKeyFlow = oneKeyFlow;
+  Q.isBusy = () => flowBusy || S.busy;
 
   /* ---------- 来自后台 / 弹窗的消息 ---------- */
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {

@@ -47,7 +47,7 @@
   }
   .qc-bot:hover .qc-bot-head { filter: brightness(1.08); }
   .qc-bot-eyes {
-    display: flex; gap: 8px; margin-top: -2px;
+    display: flex; gap: 8px;
     animation: qc-bot-look 9s ease-in-out infinite;
   }
   .qc-bot-eye {
@@ -60,15 +60,17 @@
   .qc-bot[data-mood] .qc-bot-eyes { animation: none; }
   .qc-bot[data-mood] .qc-bot-eye { animation: none; }
 
-  /* 开心：眼睛眯成两道弯 */
+  /* 开心：眼睛眯成两道半圆（高度约为正常眼的一半） */
   .qc-bot[data-mood="happy"] .qc-bot-eye {
-    height: 7px; background: transparent;
-    border-top: 2.5px solid #fff; border-radius: 7px 7px 0 0;
+    width: 8px; height: 4.5px; background: transparent;
+    border-top: 2.5px solid #fff; border-radius: 4.5px 4.5px 0 0;
+    transform: translateY(1.5px);
   }
-  /* 卖萌：一只眯一只睁 */
+  /* 卖萌：一只半圆一只睁 */
   .qc-bot[data-mood="wink"] .qc-bot-eye:first-child {
-    height: 7px; background: transparent;
-    border-top: 2.5px solid #fff; border-radius: 7px 7px 0 0;
+    width: 8px; height: 4.5px; background: transparent;
+    border-top: 2.5px solid #fff; border-radius: 4.5px 4.5px 0 0;
+    transform: translateY(1.5px);
   }
   /* 委屈：眼睛又大又圆，外眼角往下垂（八字），配一个撇嘴 */
   .qc-bot[data-mood="sad"] .qc-bot-eye { width: 7px; height: 10px; border-radius: 50%; }
@@ -84,6 +86,33 @@
   .qc-bot[data-mood="sleepy"] .qc-bot-eye { height: 2.5px; border-radius: 2px; }
   /* 思考：眼珠往上瞟 */
   .qc-bot[data-mood="think"] .qc-bot-eye { transform: translateY(-1.5px); }
+
+  /* 鼠标靠近：眼睛跟着走 */
+  .qc-bot[data-tracking="1"] .qc-bot-eyes {
+    animation: none;
+    transform: translate(var(--qc-look-x, 0px), var(--qc-look-y, 0px));
+  }
+
+  /* 晕：两只螺旋眼，整只轻轻摇 */
+  .qc-bot-spiral {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    opacity: 0; pointer-events: none;
+  }
+  .qc-bot-spiral svg { width: 10px; height: 10px; display: block; }
+  .qc-bot-spiral path {
+    fill: none; stroke: #fff; stroke-width: 1.25;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  .qc-bot[data-mood="dizzy"] .qc-bot-eyes { opacity: 0; }
+  .qc-bot[data-mood="dizzy"] .qc-bot-spiral {
+    opacity: 1;
+    animation: qc-bot-dizzy 1.2s linear infinite;
+  }
+  .qc-bot[data-mood="dizzy"] .qc-bot-body { animation: qc-bot-wobble 1.1s ease-in-out infinite; }
+
+  /* 双击 / 无聊时蹦一下 */
+  .qc-bot[data-hop="1"] .qc-bot-body { animation: qc-bot-hop .52s cubic-bezier(.3,.8,.4,1); }
 
   /* 打瞌睡时头上飘 z z z */
   .qc-bot-zzz {
@@ -172,6 +201,20 @@
     68% { opacity: .95 }
     100% { opacity: 0; transform: translate(10px, -16px) scale(1.05) }
   }
+  @keyframes qc-bot-dizzy { to { transform: rotate(360deg) } }
+  @keyframes qc-bot-wobble {
+    0%, 100% { transform: rotate(0) }
+    25% { transform: rotate(-6deg) }
+    75% { transform: rotate(6deg) }
+  }
+  @keyframes qc-bot-hop {
+    0% { transform: translateY(0) scale(1, 1) }
+    16% { transform: translateY(3px) scale(1.14, .86) }
+    44% { transform: translateY(-13px) scale(.93, 1.09) }
+    70% { transform: translateY(0) scale(1.1, .9) }
+    86% { transform: translateY(0) scale(.98, 1.02) }
+    100% { transform: translateY(0) scale(1, 1) }
+  }
   @keyframes qc-bot-shake {
     0%, 100% { transform: translateX(0) }
     25% { transform: translateX(-3px) }
@@ -208,7 +251,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .qc-bot-body, .qc-bot-head, .qc-bot-eyes, .qc-bot-eye,
-    .qc-bot-antenna::after, .qc-bot-tick path, .qc-bot-zzz i { animation: none !important; }
+    .qc-bot-antenna::after, .qc-bot-tick path, .qc-bot-zzz i,
+    .qc-bot-spiral { animation: none !important; }
     .qc-bot[data-state="done"] .qc-bot-tick path,
     .qc-bot[data-state="warn"] .qc-bot-tick path { stroke-dashoffset: 0; }
     .qc-bot[data-mood="sleepy"] .qc-bot-zzz i { opacity: .92; }
@@ -217,6 +261,19 @@
     .qc-bot-zzz i:nth-child(3) { bottom: 15px; }
   }
   `;
+
+  /* 晕眩用的螺旋线（10×10 的 viewBox 里绕 2.2 圈） */
+  const SPIRAL =
+    'M5.0 4.6L5.2 4.5L5.4 4.5L5.6 4.7L5.8 4.9L5.9 5.2L5.8 5.6L5.6 5.9L5.3 6.2L4.8 6.3L4.3 6.3' +
+    'L3.8 6.0L3.4 5.6L3.2 5.0L3.3 4.3L3.5 3.7L4.1 3.1L4.8 2.8L5.6 2.8L6.4 3.1L7.1 3.6L7.6 4.4' +
+    'L7.7 5.4L7.5 6.4L6.9 7.2L6.0 7.9L4.9 8.1L3.7 8.0L2.7 7.4L1.9 6.5L1.5 5.3L1.5 4.0L2.0 2.7' +
+    'L2.9 1.7L4.2 1.1L5.7 1.0L7.1 1.4L8.3 2.3L9.2 3.6';
+
+  /* 交互参数 */
+  const FOLLOW_R = 220;      // 鼠标进入这个半径，眼睛开始跟
+  const WAKE_R = 150;        // 睡着的它，鼠标走到这么近会惊醒
+  const DIZZY_SPEED = 1200;  // 拖动速度超过这个值（px/s）会晕
+  const DIZZY_WINDOW = 1600; // 判定画圈的时间窗
 
   /* 待机时随机换的表情（权重加起来 0.52，剩下 48% 就是单纯眨个眼） */
   const IDLE_MOODS = [
@@ -233,6 +290,15 @@
   let sleepTimer = null;
   let drag = null;
   let suppressClick = false;
+
+  let rafId = 0;
+  let lastPtr = null;
+  let tracking = false;
+  let dragSamples = [];
+  let dizzyUntil = 0;
+  let pokeTimes = [];
+  let hopTimer = null;
+  let wanderTimer = null;
 
   function ensureStyle(shadow) {
     if (shadow.querySelector('style[data-qc-style="mascot"]')) return;
@@ -295,6 +361,163 @@
     moveTo(r.left, r.top);
   }
 
+  /* ---------- 松手贴边 ---------- */
+  function snapToEdge() {
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const M = 12;
+    let left = r.left;
+    let top = r.top;
+    if (r.left < M) left = 4;
+    else if (window.innerWidth - r.right < M) left = window.innerWidth - r.width - 4;
+    if (r.top < M) top = 4;
+    else if (window.innerHeight - r.bottom < M) top = window.innerHeight - r.height - 4;
+
+    if (Math.round(left) === Math.round(r.left) && Math.round(top) === Math.round(r.top)) return;
+
+    el.style.transition = 'left .18s ease, top .18s ease';
+    moveTo(left, top);
+    setTimeout(() => {
+      if (el) el.style.transition = '';
+    }, 220);
+    setTimeout(savePos, 200);
+  }
+
+  /* ---------- 鼠标靠近：眼睛跟着走 ---------- */
+  function stopFollow() {
+    tracking = false;
+    if (el && el.dataset.tracking) delete el.dataset.tracking;
+  }
+
+  function wake() {
+    if (!el || el.dataset.mood !== 'sleepy') return;
+    setMood('surprised', 450);
+    say('！', 700, false);
+    startIdle();
+  }
+
+  function tick() {
+    if (!el) return;
+    if (el.dataset.state !== 'idle' || drag) {
+      stopFollow();
+      return;
+    }
+    if (!lastPtr) return;
+
+    const box = el.getBoundingClientRect();
+    const dx = lastPtr.x - (box.left + box.width / 2);
+    const dy = lastPtr.y - (box.top + box.height / 2);
+    const dist = Math.hypot(dx, dy);
+
+    if (el.dataset.mood === 'sleepy' && dist < WAKE_R) wake();
+
+    if (dist > FOLLOW_R || el.dataset.mood) {
+      stopFollow();
+      return;
+    }
+
+    const nx = Math.max(-1, Math.min(1, dx / FOLLOW_R));
+    const ny = Math.max(-1, Math.min(1, dy / FOLLOW_R));
+    el.dataset.tracking = '1';
+    el.style.setProperty('--qc-look-x', (nx * 1.8).toFixed(1) + 'px');
+    el.style.setProperty('--qc-look-y', (ny * 1.4).toFixed(1) + 'px');
+    tracking = true;
+  }
+
+  function onWindowMove(e) {
+    lastPtr = { x: e.clientX, y: e.clientY };
+    if (typeof requestAnimationFrame !== 'function') {
+      tick();
+      return;
+    }
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = 0;
+      tick();
+    });
+  }
+
+  /* ---------- 晕 ---------- */
+  function makeDizzy() {
+    const now = Date.now();
+    if (now < dizzyUntil) return;
+    dizzyUntil = now + 3200;
+    dragSamples = [];
+    setMood('dizzy', 1700);
+    say('晕…', 1600, false);
+  }
+
+  function feedDrag(e) {
+    const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+    dragSamples.push({ x: e.clientX, y: e.clientY, t: now });
+    while (dragSamples.length && now - dragSamples[0].t > DIZZY_WINDOW) dragSamples.shift();
+    if (dragSamples.length < 2) return;
+
+    const a = dragSamples[dragSamples.length - 2];
+    const b = dragSamples[dragSamples.length - 1];
+    const dt = b.t - a.t;
+    let fast = false;
+    if (dt > 0 && ((Math.hypot(b.x - a.x, b.y - a.y) / dt) * 1000) > DIZZY_SPEED) fast = true;
+
+    let path = 0;
+    for (let i = 1; i < dragSamples.length; i++) {
+      path += Math.hypot(dragSamples[i].x - dragSamples[i - 1].x, dragSamples[i].y - dragSamples[i - 1].y);
+    }
+    const first = dragSamples[0];
+    const last = dragSamples[dragSamples.length - 1];
+    const disp = Math.hypot(last.x - first.x, last.y - first.y);
+    const circle = path > 600 && path / Math.max(disp, 20) > 3.2;
+
+    if (fast || circle) makeDizzy();
+  }
+
+  /* ---------- 蹦跶 ---------- */
+  function hop() {
+    if (!el || prefersReduced()) return;
+    el.dataset.hop = '1';
+    if (hopTimer) clearTimeout(hopTimer);
+    hopTimer = setTimeout(() => {
+      if (el) delete el.dataset.hop;
+      hopTimer = null;
+    }, 540);
+  }
+
+  function scheduleWander() {
+    if (wanderTimer) clearTimeout(wanderTimer);
+    if (prefersReduced()) return;
+    wanderTimer = setTimeout(wander, 20000 + Math.random() * 16000);
+  }
+
+  function wander() {
+    wanderTimer = null;
+    if (!el || el.dataset.state !== 'idle' || el.dataset.mood || drag || tracking) {
+      scheduleWander();
+      return;
+    }
+    try {
+      if (document.hidden) {
+        scheduleWander();
+        return;
+      }
+    } catch (e) {}
+
+    const r = el.getBoundingClientRect();
+    const p = clampPos(r.left + (Math.random() * 2 - 1) * 72, r.top + (Math.random() * 2 - 1) * 48);
+    if (Math.abs(p.left - r.left) < 6 && Math.abs(p.top - r.top) < 6) {
+      scheduleWander();
+      return;
+    }
+
+    hop();
+    el.style.transition = 'left .55s cubic-bezier(.34,1.2,.64,1), top .55s cubic-bezier(.34,1.2,.64,1)';
+    moveTo(p.left, p.top);
+    setTimeout(() => {
+      if (el) el.style.transition = '';
+    }, 580);
+    setTimeout(savePos, 560);
+    scheduleWander();
+  }
+
   /* ---------- 拖拽 ---------- */
   function onDown(e) {
     if (!el) return;
@@ -323,6 +546,7 @@
     drag.moved = true;
     el.dataset.dragging = '1';
     moveTo(e.clientX - drag.ox, e.clientY - drag.oy);
+    feedDrag(e);
   }
 
   function onUp(e) {
@@ -337,10 +561,14 @@
     if (!moved) return;
     suppressClick = true;
     setTimeout(() => { suppressClick = false; }, 80);
+    snapToEdge();
     savePos();
     if (el) {
-      setMood('happy', 900);
-      say('放这儿啦', 1400, false);
+      // 刚被甩晕的话，别立刻换成笑脸
+      if (el.dataset.mood !== 'dizzy') {
+        setMood('happy', 900);
+        say('放这儿啦', 1400, false);
+      }
     }
   }
 
@@ -373,7 +601,7 @@
     stopIdle();
     if (prefersReduced()) return;
     idleTimer = setInterval(() => {
-      if (!el || el.dataset.state !== 'idle' || el.dataset.mood || drag) return;
+      if (!el || el.dataset.state !== 'idle' || el.dataset.mood || drag || tracking) return;
       const m = pickMood();
       if (m) setMood(m.k, m.ms);
     }, 5200);
@@ -407,6 +635,17 @@
     }
   }
 
+  /* ---------- 被戳烦了 ---------- */
+  function poke() {
+    const now = Date.now();
+    pokeTimes = pokeTimes.filter((t) => now - t < 2600);
+    pokeTimes.push(now);
+    if (pokeTimes.length < 3) return;
+    pokeTimes = [];
+    setMood('angry', 1000);
+    say('别戳啦，在算了', 1400, false);
+  }
+
   /* ---------- 构建 ---------- */
   function mount() {
     const S = Q.S;
@@ -427,6 +666,7 @@
       '<span class="qc-bot-antenna"></span>' +
       '<span class="qc-bot-head">' +
       '<span class="qc-bot-eyes"><span class="qc-bot-eye"></span><span class="qc-bot-eye"></span></span>' +
+      '<span class="qc-bot-spiral"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="' + SPIRAL + '"/></svg><svg viewBox="0 0 10 10" aria-hidden="true"><path d="' + SPIRAL + '"/></svg></span>' +
       '<span class="qc-bot-zzz"><i>z</i><i>z</i><i>z</i></span>' +
       '<svg class="qc-bot-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5 L10 17 L18.5 7.5"/></svg>' +
       '</span></span>' +
@@ -436,8 +676,22 @@
       e.stopPropagation();
       e.preventDefault();
       if (suppressClick) return;
+
+      // 它正在算的时候戳它，戳三次会烦
+      if (Q.isBusy && Q.isBusy()) {
+        poke();
+        return;
+      }
       if (Q.oneKeyFlow) Q.oneKeyFlow({ from: 'mascot' });
     });
+
+    btn.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      hop();
+      if (el && el.dataset.state === 'idle') setMood('happy', 700);
+    });
+
     btn.addEventListener('mouseenter', onEnter);
     btn.addEventListener('mouseleave', onLeave);
     btn.addEventListener('pointerdown', onDown);
@@ -459,10 +713,12 @@
 
     try {
       window.addEventListener('resize', onResize, { passive: true });
+      window.addEventListener('pointermove', onWindowMove, { passive: true });
     } catch (e) {}
 
     restorePos();
     startIdle();
+    scheduleWander();
     return el;
   }
 
@@ -535,13 +791,20 @@
   function destroy() {
     stopIdle();
     clearMood();
+    stopFollow();
+    if (hopTimer) { clearTimeout(hopTimer); hopTimer = null; }
+    if (wanderTimer) { clearTimeout(wanderTimer); wanderTimer = null; }
+    if (rafId && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(rafId);
+    rafId = 0;
+    dragSamples = [];
     try {
       window.removeEventListener('resize', onResize);
+      window.removeEventListener('pointermove', onWindowMove);
     } catch (e) {}
     drag = null;
     if (el && el.isConnected) el.remove();
     el = null;
   }
 
-  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, CSS };
+  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, CSS };
 })();
