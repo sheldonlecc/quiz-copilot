@@ -99,6 +99,31 @@ quiz-copilot/
 
 改完代码在扩展页点 ↻，刷新页面即可。
 
+## 分享给别人
+
+这个扩展没有上架商店，安装包就是一个文件夹。三种方式：
+
+**1. 发压缩包（推荐）**
+
+打包命令（Windows PowerShell，在仓库根目录执行）：
+
+```powershell
+Compress-Archive -Path quiz-copilot, 安装说明.html, 本地测试卷.html `
+                 -DestinationPath dist\quiz-copilot.zip
+```
+
+对方解压后，双击 `安装说明.html`，照第 1 步加载 `quiz-copilot` 文件夹即可。
+**API Key 不能随包发**——Key 跟账号走，对方得自己申请。
+
+**2. 给仓库权限**
+
+私有仓库在 Settings → Collaborators 里加对方 GitHub 用户名；要完全公开则 Settings → Danger Zone → Change visibility。
+注意公开后提交历史里的作者邮箱也会一起公开。
+
+**3. 上架商店**
+
+Edge 加载项商店开发者账号免费，Chrome 应用商店一次性 5 美元。但「自动替人答题」这类用途审核风险很高，很可能被拒。
+
 ## 许可
 
 MIT，见 [LICENSE](LICENSE)。

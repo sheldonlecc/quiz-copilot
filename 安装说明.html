@@ -312,7 +312,7 @@
     <h2>去哪测试</h2>
 
     <p><b>1. 本地测试卷（先跑这个）</b></p>
-    <p>工作区根目录的 <code>本地测试卷.html</code>，双击用 Edge 打开即可。里面埋了 6 道题，覆盖单选、多选、判断、单空、多空、Moodle 式独立命名，还特意放了搜索框和「姓名 / 学号」输入框当诱饵。</p>
+    <p>和这份说明放在一起的 <code>本地测试卷.html</code>，双击用 Edge 打开即可（它也在分享包里）。里面埋了 6 道题，覆盖单选、多选、判断、单空、多空、Moodle 式独立命名，还特意放了搜索框和「姓名 / 学号」输入框当诱饵。</p>
     <p>正确表现：<b>读出 6 道题</b>。如果读出 9 道（把搜索框、姓名框也当成题），或者第 6 题被拆成 4 道，就是分组逻辑出了问题。页面底部有个折叠区，点开是对照答案。</p>
     <div class="note">
       本地文件默认禁止扩展注入，要先到 <code>edge://extensions</code> → 答题助手 → <b>详细信息</b>，打开「<b>允许访问文件 URL</b>」，再刷新本页。
@@ -357,6 +357,35 @@
       <tr><td>点了没勾上</td><td>页面用自定义组件拦截了点击，属于少数情况，看到答案后手动点一下即可。</td></tr>
       <tr><td>填空填不上</td><td>输入框可能不在可视区域、被页面禁用，或这题本来就是纯图文形式没有真输入框。看答案手动填即可。</td></tr>
     </table>
+  </div>
+
+  <div class="card">
+    <h2>分享给别人</h2>
+    <p>这个扩展没有上架应用商店，所以「安装包」就是那个文件夹。三种方式，从省事到正式：</p>
+
+    <p style="margin-top:16px"><b>1. 发压缩包（最省事）</b></p>
+    <ol>
+      <li>把 <code>quiz-copilot-v1.11.4.zip</code> 发给对方</li>
+      <li>对方解压到任意目录，里面是两样东西：<code>quiz-copilot</code> 文件夹 + 这份说明页</li>
+      <li>让对方双击这份说明页，照着最上面第 1 步，加载解压出来的 <code>quiz-copilot</code> 文件夹</li>
+    </ol>
+    <p style="font-size:13.5px;color:#7f8695">API Key 不能随包发。Key 是跟着账号走的，对方得自己申请一个（第 3 步），也千万别把你的 Key 发出去。</p>
+
+    <p style="margin-top:16px"><b>2. 给 GitHub 仓库权限</b></p>
+    <p>仓库在 <a href="https://github.com/sheldonlecc/quiz-copilot" target="_blank" rel="noreferrer">github.com/sheldonlecc/quiz-copilot</a>，目前是私有的。
+      想让某个人看源码：仓库 <b>Settings → Collaborators → Add people</b>，填对方 GitHub 用户名。对方接受邀请后就能克隆或下载 zip。</p>
+    <p style="font-size:13.5px;color:#7f8695">如果想完全公开：<b>Settings → 最下面 Danger Zone → Change visibility → Make public</b>。注意公开之后，提交历史里的作者邮箱也一起公开。</p>
+
+    <p style="margin-top:16px"><b>3. 上架应用商店（要当产品做才考虑）</b></p>
+    <table>
+      <tr><th>渠道</th><th>情况</th></tr>
+      <tr><td>Edge 加载项商店</td><td>开发者账号免费，微软审核，一般几个工作日</td></tr>
+      <tr><td>Chrome 应用商店</td><td>一次性 5 美元注册费，审核更严</td></tr>
+    </table>
+    <div class="note">
+      <b>上架前想清楚。</b>「自动替人答题」这类用途在商店审核里风险很高，很可能被拒；公开传播也会把「协助作弊」的争议放大。
+      小范围用，或者把源码给信任的人看，比上架稳妥。
+    </div>
   </div>
 
   <div class="card">

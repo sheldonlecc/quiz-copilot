@@ -11,6 +11,9 @@ _faces*.png
 _shot*.png
 _gen*.js
 
+# 打包产物（dist/*.zip）
+dist/
+
 # 依赖
 node_modules/
 
