@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "答题助手 QuizCopilot",
-  "version": "1.11.3",
+  "version": "1.11.4",
   "description": "自动读取网页上的题目（单选/多选/判断/填空/表格/匹配），调用 AI 给出答案与解析；点右下角小机器人一键读完并填入。",
   "minimum_chrome_version": "102",
   "permissions": [

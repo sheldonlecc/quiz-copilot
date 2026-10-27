@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>小机器人 · v1.11.3</title>
+<title>小机器人 · v1.11.4</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -40,10 +40,10 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>小机器人<span class="v">v1.11.3</span></h1>
+  <h1>小机器人<span class="v">v1.11.4</span></h1>
   <div class="sub">
     <b>现在能拖着走了。</b>按住右下角那个，拖到哪儿它就待在哪儿，下次打开还在那儿。<br>
-    表情只靠眼睛变：开心眯成半圆、委屈时外眼角垂下来、不高兴反过来，睡着飘 zzz；被甩晕了是螺旋眼，松手后靠惯性再转一会儿，然后闭眼 >< 甩甩头。<br><b>鼠标靠近它会看你</b>，按住能拖走，双击会蹦一下。
+    表情只靠眼睛变：开心眯成半圆、委屈时外眼角垂下来、不高兴反过来，睡着飘 zzz；被甩晕了是螺旋眼，松手后靠惯性再转一会儿，然后闭眼 ><、整排眼睛左右荡着晃两下。<br><b>鼠标靠近它会看你</b>，按住能拖走，双击会蹦一下。
   </div>
   <div class="grid" id="grid"></div>
 
@@ -202,7 +202,8 @@ window.__QC = {
     border-right: 0; border-left: 2px solid #fff;
     transform: rotate(-45deg);
   }
-  .qc-bot[data-mood="daze"] .qc-bot-head { animation: qc-bot-headshake .36s ease-in-out infinite; }
+  /* 甩头不转脑袋，靠两只眼睛整体左右荡来表现 */
+  .qc-bot[data-mood="daze"] .qc-bot-eyes { animation: qc-bot-eyeshake .42s ease-in-out infinite; }
 
   /* 双击 / 无聊时蹦一下 */
   .qc-bot[data-hop="1"] .qc-bot-body { animation: qc-bot-hop .52s cubic-bezier(.3,.8,.4,1); }
@@ -295,10 +296,12 @@ window.__QC = {
     100% { opacity: 0; transform: translate(10px, -16px) scale(1.05) }
   }
   @keyframes qc-bot-dizzy { to { transform: rotate(360deg) } }
-  @keyframes qc-bot-headshake {
-    0%, 100% { transform: rotate(0) }
-    22% { transform: rotate(-10deg) }
-    72% { transform: rotate(10deg) }
+  @keyframes qc-bot-eyeshake {
+    0%, 100% { transform: translateX(0) }
+    15% { transform: translateX(-3px) }
+    45% { transform: translateX(3px) }
+    72% { transform: translateX(-1.5px) }
+    88% { transform: translateX(.8px) }
   }
   @keyframes qc-bot-wobble {
     0%, 100% { transform: rotate(0) }
@@ -1018,7 +1021,7 @@ window.__QC = {
 (function () {
   var M = window.__QC.mascot;
   var BOT = "<span class=\"qc-bot-body\"><span class=\"qc-bot-antenna\"></span><span class=\"qc-bot-head\"><span class=\"qc-bot-eyes\"><span class=\"qc-bot-eye\"></span><span class=\"qc-bot-eye\"></span></span><span class=\"qc-bot-spiral\"><svg viewBox=\"0 0 10 10\"><path d=\"M5.0 4.6L5.2 4.5L5.4 4.5L5.6 4.7L5.8 4.9L5.9 5.2L5.8 5.6L5.6 5.9L5.3 6.2L4.8 6.3L4.3 6.3L3.8 6.0L3.4 5.6L3.2 5.0L3.3 4.3L3.5 3.7L4.1 3.1L4.8 2.8L5.6 2.8L6.4 3.1L7.1 3.6L7.6 4.4L7.7 5.4L7.5 6.4L6.9 7.2L6.0 7.9L4.9 8.1L3.7 8.0L2.7 7.4L1.9 6.5L1.5 5.3L1.5 4.0L2.0 2.7L2.9 1.7L4.2 1.1L5.7 1.0L7.1 1.4L8.3 2.3L9.2 3.6\"/></svg><svg viewBox=\"0 0 10 10\"><path d=\"M5.0 4.6L5.2 4.5L5.4 4.5L5.6 4.7L5.8 4.9L5.9 5.2L5.8 5.6L5.6 5.9L5.3 6.2L4.8 6.3L4.3 6.3L3.8 6.0L3.4 5.6L3.2 5.0L3.3 4.3L3.5 3.7L4.1 3.1L4.8 2.8L5.6 2.8L6.4 3.1L7.1 3.6L7.6 4.4L7.7 5.4L7.5 6.4L6.9 7.2L6.0 7.9L4.9 8.1L3.7 8.0L2.7 7.4L1.9 6.5L1.5 5.3L1.5 4.0L2.0 2.7L2.9 1.7L4.2 1.1L5.7 1.0L7.1 1.4L8.3 2.3L9.2 3.6\"/></svg></span><span class=\"qc-bot-zzz\"><i>z</i><i>z</i><i>z</i></span><svg class=\"qc-bot-tick\" viewBox=\"0 0 24 24\"><path d=\"M5.5 12.5 L10 17 L18.5 7.5\"/></svg></span></span>";
-  var CARDS = [{"mood":"","state":"idle","t":"待机","d":"眨眼、左右张望、甩头"},{"mood":"happy","state":"idle","t":"开心","d":"眼睛眯成两道弯"},{"mood":"wink","state":"idle","t":"卖萌","d":"一只眼眯起来"},{"mood":"sad","state":"idle","t":"委屈","d":"眼睛放大，外眼角垂下来"},{"mood":"angry","state":"idle","t":"不高兴","d":"内眼角压下来"},{"mood":"surprised","state":"idle","t":"惊讶","d":"眼睛瞪圆"},{"mood":"dizzy","state":"idle","t":"晕乎乎","d":"甩太快或画圈就会"},{"mood":"daze","state":"idle","t":"晕完闭眼","d":"眼睛闭成 > <，甩甩头"},{"mood":"sleepy","state":"idle","t":"打瞌睡","d":"细眼 + 头上飘 zzz"},{"mood":"","state":"thinking","t":"解题中","d":"眼睛脉动、天线闪"},{"mood":"","state":"done","t":"全部填好","d":"变绿 + 对勾"},{"mood":"","state":"error","t":"出错","d":"变红 + 委屈脸 + 抖一下"}];
+  var CARDS = [{"mood":"","state":"idle","t":"待机","d":"眨眼、左右张望、甩头"},{"mood":"happy","state":"idle","t":"开心","d":"眼睛眯成两道弯"},{"mood":"wink","state":"idle","t":"卖萌","d":"一只眼眯起来"},{"mood":"sad","state":"idle","t":"委屈","d":"眼睛放大，外眼角垂下来"},{"mood":"angry","state":"idle","t":"不高兴","d":"内眼角压下来"},{"mood":"surprised","state":"idle","t":"惊讶","d":"眼睛瞪圆"},{"mood":"dizzy","state":"idle","t":"晕乎乎","d":"甩太快或画圈就会"},{"mood":"daze","state":"idle","t":"晕完闭眼","d":"眼睛闭成 > <，靠眼睛左右荡来甩头"},{"mood":"sleepy","state":"idle","t":"打瞌睡","d":"细眼 + 头上飘 zzz"},{"mood":"","state":"thinking","t":"解题中","d":"眼睛脉动、天线闪"},{"mood":"","state":"done","t":"全部填好","d":"变绿 + 对勾"},{"mood":"","state":"error","t":"出错","d":"变红 + 委屈脸 + 抖一下"}];
 
   var grid = document.getElementById('grid');
   CARDS.forEach(function (c) {

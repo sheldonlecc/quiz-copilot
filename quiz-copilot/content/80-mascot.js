@@ -125,7 +125,8 @@
     border-right: 0; border-left: 2px solid #fff;
     transform: rotate(-45deg);
   }
-  .qc-bot[data-mood="daze"] .qc-bot-head { animation: qc-bot-headshake .36s ease-in-out infinite; }
+  /* 甩头不转脑袋，靠两只眼睛整体左右荡来表现 */
+  .qc-bot[data-mood="daze"] .qc-bot-eyes { animation: qc-bot-eyeshake .42s ease-in-out infinite; }
 
   /* 双击 / 无聊时蹦一下 */
   .qc-bot[data-hop="1"] .qc-bot-body { animation: qc-bot-hop .52s cubic-bezier(.3,.8,.4,1); }
@@ -218,10 +219,12 @@
     100% { opacity: 0; transform: translate(10px, -16px) scale(1.05) }
   }
   @keyframes qc-bot-dizzy { to { transform: rotate(360deg) } }
-  @keyframes qc-bot-headshake {
-    0%, 100% { transform: rotate(0) }
-    22% { transform: rotate(-10deg) }
-    72% { transform: rotate(10deg) }
+  @keyframes qc-bot-eyeshake {
+    0%, 100% { transform: translateX(0) }
+    15% { transform: translateX(-3px) }
+    45% { transform: translateX(3px) }
+    72% { transform: translateX(-1.5px) }
+    88% { transform: translateX(.8px) }
   }
   @keyframes qc-bot-wobble {
     0%, 100% { transform: rotate(0) }
