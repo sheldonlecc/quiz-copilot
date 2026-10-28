@@ -326,7 +326,13 @@
   }
   .qc-pomo[data-mode="break"] .qc-pomo-bar i { background: linear-gradient(90deg, #34d399, #0f9d63); }
   .qc-pomo[data-mode="done"] .qc-pomo-bar i { background: #fbbf24; width: 0 !important; }
-  .qc-bot[data-v="down"] .qc-pomo { bottom: auto; top: calc(100% + 7px); }
+  /* 机器人贴近屏幕顶部时，气泡会挂到下方，计时牌就挪到左边，避免撞在一起 */
+  .qc-bot[data-v="down"] .qc-pomo {
+    bottom: auto; top: 50%; left: auto; right: calc(100% + 6px);
+    transform: translate(4px, -50%) scale(.9);
+    transform-origin: 100% 50%;
+  }
+  .qc-bot[data-v="down"] .qc-pomo[data-on="1"] { transform: translate(0, -50%) scale(1); }
   @keyframes qc-pomo-blink { 0%, 100% { opacity: 1 } 50% { opacity: .32 } }
 
   .qc-bot-bubble {
@@ -647,7 +653,10 @@
       chrome.storage.sync.get({ botPos: null }, (cfg) => {
         const p = cfg && cfg.botPos;
         if (!el || !p) return;
-        if (typeof p.left === 'number' && typeof p.top === 'number') moveTo(p.left, p.top);
+        if (typeof p.left === 'number' && typeof p.top === 'number') {
+          moveTo(p.left, p.top);
+          placeBubble();
+        }
       });
     } catch (e) {}
   }
@@ -989,6 +998,7 @@
     hop();
     el.style.transition = 'left .62s cubic-bezier(.34,1.2,.64,1), top .62s cubic-bezier(.34,1.2,.64,1)';
     moveTo(p.left, p.top);
+    placeBubble();
     setTimeout(() => {
       if (el) el.style.transition = '';
     }, 650);
@@ -1041,6 +1051,7 @@
     setTimeout(() => { suppressClick = false; }, 80);
     snapToEdge();
     savePos();
+    placeBubble();
     if (el) {
       // 刚被甩晕的话，走惯性 → 闭眼甩头，别立刻换笑脸
       if (el.dataset.mood === 'dizzy') {
@@ -1343,9 +1354,12 @@
   function placeBubble() {
     if (!el) return;
     const r = el.getBoundingClientRect();
-    if (r.left < 260) el.dataset.bubble = 'right';
+    // 移动/吸附有过渡动画，rect 拿到的是中间值，优先用 style 上的目标坐标
+    const left = el.style.left ? parseFloat(el.style.left) : r.left;
+    const top = el.style.top ? parseFloat(el.style.top) : r.top;
+    if (!isNaN(left) && left < 260) el.dataset.bubble = 'right';
     else delete el.dataset.bubble;
-    if (r.top < 80) el.dataset.v = 'down';
+    if (!isNaN(top) && top < 80) el.dataset.v = 'down';
     else delete el.dataset.v;
   }
 
