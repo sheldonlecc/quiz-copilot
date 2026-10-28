@@ -112,6 +112,12 @@
     }
 
     parts.push(row('solve', '一键解题', 'Alt+Shift+Q'));
+    const chain = Q.chain && Q.chain.info ? Q.chain.info() : null;
+    if (chain && chain.on) {
+      parts.push(row('chain', '停止连续做题', `${chain.pages}/${chain.max}`));
+    } else {
+      parts.push(row('chain', '连续做题（自动翻页）', `${(chain && chain.max) || 30} 页内`));
+    }
     parts.push(row('fill', '填入页面', '', { disabled: !(S.questions && S.questions.some((q) => q.answer)) }));
     parts.push(row('panel', '打开面板', 'Alt+Q'));
     parts.push(sep());
@@ -223,6 +229,12 @@
     const bot = Q.mascot;
     if (act === 'solve') {
       if (Q.oneKeyFlow) Q.oneKeyFlow({ from: 'menu', redo: true });
+      return;
+    }
+    if (act === 'chain') {
+      if (!Q.chain) return;
+      if (Q.chain.isOn()) Q.chain.stop();
+      else Q.chain.start();
       return;
     }
     if (act === 'fill') {

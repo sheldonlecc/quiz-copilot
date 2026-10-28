@@ -176,6 +176,23 @@
     );
   });
 
+  /* ---------- 连续做题 ---------- */
+  $('chain').addEventListener('click', async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab || !tab.id) return;
+    if (/^(chrome|edge|about|chrome-extension):/i.test(tab.url || '')) {
+      setStatus('浏览器内部页面无法注入，请在答题网页上使用。', 'err');
+      return;
+    }
+    chrome.tabs.sendMessage(tab.id, { type: 'QC_CHAIN' }, () => {
+      if (chrome.runtime.lastError) {
+        setStatus('这个页面还没注入脚本。刷新一下页面（F5）再试。', 'err');
+        return;
+      }
+      window.close();
+    });
+  });
+
   /* ---------- 打开面板 ---------- */
   $('openPanel').addEventListener('click', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

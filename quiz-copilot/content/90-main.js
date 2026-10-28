@@ -129,6 +129,12 @@
       return true;
     }
 
+    if (msg.type === 'QC_CHAIN') {
+      if (Q.chain) Q.chain.start();
+      sendResponse({ ok: !!Q.chain });
+      return true;
+    }
+
     if (msg.type === 'QC_PING') {
       sendResponse({ ok: true, hasPanel: !!(S.panelEl && S.panelEl.isConnected) });
       return true;
@@ -159,6 +165,8 @@
         if (Q.menu && Q.menu.mount) Q.menu.mount();
         if (Q.pomo && Q.pomo.init) Q.pomo.init();
         if (Q.sel && Q.sel.init) Q.sel.init();
+        // 上一页刚点过「下一页」的话，这里接着做
+        if (Q.chain && Q.chain.resume) setTimeout(() => Q.chain.resume(), 500);
       });
     } catch (e) {}
 
