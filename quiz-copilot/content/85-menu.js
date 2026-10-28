@@ -42,6 +42,21 @@
   .qc-menu-row:hover:not(:disabled) .qc-menu-v { color: #9dc0ff; }
   .qc-menu-on { color: #6ee7a8; font-size: 11px; }
   .qc-menu-sep { height: 1px; margin: 4px 6px; background: rgba(255,255,255,.08); }
+  .qc-menu-chips { display: flex; align-items: center; gap: 4px; padding: 2px 9px 5px; }
+  .qc-menu-chip-k { font-size: 10.5px; color: #7f8a9c; flex: 0 0 auto; width: 26px; }
+  .qc-menu-chip {
+    flex: 1 1 0; min-width: 0; padding: 4px 0;
+    border-radius: 6px; cursor: pointer;
+    font: inherit; font-size: 11.5px; color: #cfd6e2;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    transition: background .1s, border-color .1s, color .1s;
+  }
+  .qc-menu-chip:hover {
+    background: rgba(79,140,255,.24);
+    border-color: rgba(79,140,255,.55);
+    color: #fff;
+  }
   .qc-menu-hd {
     padding: 4px 9px 6px; font-size: 10.5px; color: #626b7a;
     letter-spacing: .4px; display: flex; align-items: center; gap: 5px;
@@ -78,6 +93,14 @@
     return '<div class="qc-menu-sep" role="separator"></div>';
   }
 
+  /* 时长做成小方块，点一下就开，不用一层层翻子菜单 */
+  function chipRow(label, list, isBreak) {
+    const btns = list
+      .map((m) => `<button class="qc-menu-chip" data-pomo="${m}" data-break="${isBreak ? 1 : 0}">${m}</button>`)
+      .join('');
+    return `<div class="qc-menu-chips"><span class="qc-menu-chip-k">${label}</span>${btns}</div>`;
+  }
+
   function build() {
     const pomo = Q.pomo && Q.pomo.state ? Q.pomo.state() : null;
     const parts = [];
@@ -95,10 +118,10 @@
 
     parts.push(row('explain', '划词解释', '', { on: S.selExplain !== false }));
     if (pomo && pomo.running) {
-      parts.push(row('pomo-stop', '结束倒计时', pomo.left));
+      parts.push(row('pomo-stop', pomo.label + '中 · 结束', pomo.left));
     } else {
-      parts.push(row('pomo', '专注 25 分钟', '25:00'));
-      parts.push(row('pomo-break', '休息 5 分钟', '05:00'));
+      parts.push(chipRow('专注', (Q.pomo && Q.pomo.FOCUS_MIN) || [15, 25, 45, 60], false));
+      parts.push(chipRow('休息', (Q.pomo && Q.pomo.BREAK_MIN) || [5, 10, 15], true));
     }
     parts.push(sep());
 
@@ -150,6 +173,16 @@
         const act = b.getAttribute('data-act');
         close();
         onAct(act);
+      });
+    });
+
+    el.querySelectorAll('[data-pomo]').forEach((b) => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const min = Number(b.getAttribute('data-pomo'));
+        const isBreak = b.getAttribute('data-break') === '1';
+        close();
+        if (Q.pomo) Q.pomo.start(min, isBreak);
       });
     });
 
@@ -213,14 +246,6 @@
       try { chrome.storage.sync.set({ autoFill: S.autoFill }); } catch (e) {}
       if (Q.render) Q.render();
       if (bot) bot.say(S.autoFill ? '自动填：开' : '自动填：关', 1600, false);
-      return;
-    }
-    if (act === 'pomo') {
-      if (Q.pomo) Q.pomo.start(25, false);
-      return;
-    }
-    if (act === 'pomo-break') {
-      if (Q.pomo) Q.pomo.start(5, true);
       return;
     }
     if (act === 'pomo-stop') {

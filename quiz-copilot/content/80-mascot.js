@@ -49,7 +49,7 @@
     box-shadow: 0 6px 18px var(--qc-glow), inset 0 1px 0 rgba(255,255,255,.26);
     display: flex; align-items: center; justify-content: center;
     animation: qc-bot-breathe 3.6s ease-in-out infinite;
-    transition: filter .15s, background .25s, box-shadow .25s;
+    transition: filter .15s, background .38s ease, box-shadow .38s ease;
   }
   .qc-bot:hover .qc-bot-head { filter: brightness(1.08); }
   .qc-bot-eyes {
@@ -58,8 +58,16 @@
   }
   .qc-bot-eye {
     width: 6px; height: 9px; border-radius: 3px; background: #fff;
+    border: 0 solid #fff;
     animation: qc-bot-blink 5.4s ease-in-out infinite;
-    transition: width .14s, height .14s, border-radius .14s, background .14s, transform .14s;
+    /* 留一点回弹：换表情时眼睛是有惯性的，不是瞬间跳过去 */
+    transition:
+      width .26s cubic-bezier(.34,1.2,.64,1),
+      height .26s cubic-bezier(.34,1.2,.64,1),
+      border-width .24s ease,
+      border-radius .24s ease,
+      background .24s ease,
+      transform .24s ease;
   }
 
   /* ---------- 表情：只靠眼睛和一张小嘴 ---------- */
@@ -111,12 +119,46 @@
     animation: none; transform: rotate(-5deg) translateY(-1px) scale(1.04);
   }
 
+  /* ---------- 收尾惯性：表情不是硬切，而是慢慢散掉 ---------- */
+  /* 摸头松手：摇摆幅度一次比一次小，爱心边飘边淡，腮红先褪 */
+  .qc-bot[data-mood="pet"][data-mood-out] .qc-bot-body {
+    animation: qc-bot-petrock-out .92s cubic-bezier(.3,.05,.2,1) 1 both;
+  }
+  .qc-bot[data-mood="pet"][data-mood-out] .qc-bot-blush {
+    opacity: 0; transition: opacity .6s ease .08s;
+  }
+  .qc-bot[data-mood="pet"][data-mood-out] .qc-bot-hearts {
+    opacity: 0; transition: opacity .55s ease .32s;
+  }
+  /* 哈欠收尾：脑袋自己慢慢回正 */
+  .qc-bot[data-mood="yawn"][data-mood-out] .qc-bot-head {
+    animation: none; transform: rotate(0) translateY(0) scale(1);
+    transition: transform .62s cubic-bezier(.34,1.32,.64,1);
+  }
+  .qc-bot[data-mood="yawn"][data-mood-out] .qc-bot-eye { transition-duration: .46s; }
+  /* 晕完收尾：>< 慢慢展开回圆眼 */
+  .qc-bot[data-mood="daze"][data-mood-out] .qc-bot-eye { transition-duration: .42s; }
+
   /* 好奇：脑袋歪过去盯着你（天线跟着歪，不然看起来还是正的） */
   .qc-bot[data-tilt="1"] .qc-bot-head {
     animation: none; transform: rotate(-12deg) translate(-1px, 1px);
   }
   .qc-bot[data-tilt="1"] .qc-bot-antenna { transform: translateX(-3px); }
   .qc-bot[data-tilt="1"] .qc-bot-eyes { animation: none; transform: translate(1px, -2px); }
+
+  /* 回正也带过冲：转过头一点点再摆回来 */
+  .qc-bot[data-tilt="out"] .qc-bot-head {
+    animation: none; transform: rotate(0) translate(0, 0);
+    transition: transform .5s cubic-bezier(.34,1.46,.5,1);
+  }
+  .qc-bot[data-tilt="out"] .qc-bot-antenna {
+    transform: translateX(0);
+    transition: transform .5s cubic-bezier(.34,1.46,.5,1);
+  }
+  .qc-bot[data-tilt="out"] .qc-bot-eyes {
+    animation: none; transform: translate(0, -1px);
+    transition: transform .5s cubic-bezier(.34,1.46,.5,1);
+  }
 
   /* 脸颊 */
   .qc-bot-blush {
@@ -161,6 +203,7 @@
   }
   .qc-bot[data-dust="1"] .qc-bot-motes { opacity: 1; }
   .qc-bot[data-dust="puff"] .qc-bot-motes { opacity: 0; transform: translateY(7px); }
+  .qc-bot[data-dust="puff"] .qc-bot-body { animation: qc-bot-dustshake .38s ease-out 1; }
   .qc-bot-motes i {
     position: absolute; width: 2px; height: 2px; border-radius: 50%;
     background: rgba(226,232,240,.55);
@@ -240,13 +283,51 @@
 
   .qc-bot-tick {
     position: absolute; inset: 0; margin: auto;
-    width: 22px; height: 22px; opacity: 0; transition: opacity .12s;
+    width: 22px; height: 22px; opacity: 0;
+    transition: opacity .28s ease;
   }
   .qc-bot-tick path {
     fill: none; stroke: #fff; stroke-width: 2.8;
     stroke-linecap: round; stroke-linejoin: round;
     stroke-dasharray: 26; stroke-dashoffset: 26;
   }
+
+  /* ---------- 番茄钟计时牌：一直挂在头顶，不用悬停 ---------- */
+  .qc-pomo {
+    position: absolute; left: 50%; bottom: calc(100% + 7px);
+    transform: translate(-50%, 4px) scale(.9);
+    display: flex; align-items: center; justify-content: center;
+    min-width: 46px; padding: 3px 7px 6px;
+    border-radius: 8px;
+    background: rgba(18,22,30,.95);
+    border: 1px solid rgba(127,163,255,.32);
+    box-shadow: 0 4px 14px rgba(0,0,0,.5);
+    font-family: ui-monospace, Consolas, "Cascadia Code", monospace;
+    font-size: 10.5px; font-weight: 700; letter-spacing: .4px;
+    color: #dbe6ff; line-height: 1.15;
+    opacity: 0; pointer-events: none; white-space: nowrap;
+    transition: opacity .24s ease, transform .34s cubic-bezier(.34,1.3,.64,1);
+  }
+  .qc-pomo[data-on="1"] { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  .qc-pomo[data-mode="break"] { border-color: rgba(110,231,168,.42); color: #b6f3d5; }
+  .qc-pomo[data-mode="done"] {
+    border-color: rgba(251,191,36,.55); color: #ffe2a8;
+    animation: qc-pomo-blink .82s ease-in-out 5;
+  }
+  .qc-pomo-t { position: relative; z-index: 1; }
+  .qc-pomo-bar {
+    position: absolute; left: 4px; right: 4px; bottom: 2px; height: 2px;
+    border-radius: 2px; background: rgba(255,255,255,.13); overflow: hidden;
+  }
+  .qc-pomo-bar i {
+    display: block; height: 100%; width: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, #4f8cff, #7c5cff);
+    transition: width 1s linear;
+  }
+  .qc-pomo[data-mode="break"] .qc-pomo-bar i { background: linear-gradient(90deg, #34d399, #0f9d63); }
+  .qc-pomo[data-mode="done"] .qc-pomo-bar i { background: #fbbf24; width: 0 !important; }
+  .qc-bot[data-v="down"] .qc-pomo { bottom: auto; top: calc(100% + 7px); }
+  @keyframes qc-pomo-blink { 0%, 100% { opacity: 1 } 50% { opacity: .32 } }
 
   .qc-bot-bubble {
     position: absolute; right: 54px; bottom: 10px;
@@ -354,6 +435,22 @@
     25% { transform: rotate(-3.5deg) }
     75% { transform: rotate(3.5deg) }
   }
+  @keyframes qc-bot-petrock-out {
+    0%   { transform: rotate(3.2deg) }
+    18%  { transform: rotate(-2.6deg) }
+    36%  { transform: rotate(2deg) }
+    54%  { transform: rotate(-1.5deg) }
+    72%  { transform: rotate(1deg) }
+    87%  { transform: rotate(-.5deg) }
+    100% { transform: rotate(0) }
+  }
+  @keyframes qc-bot-dustshake {
+    0% { transform: rotate(0) }
+    22% { transform: rotate(-2.6deg) }
+    55% { transform: rotate(2.2deg) }
+    78% { transform: rotate(-.9deg) }
+    100% { transform: rotate(0) }
+  }
   @keyframes qc-bot-heart {
     0% { opacity: 0; transform: translate(0, 0) rotate(45deg) scale(.55) }
     18% { opacity: 1 }
@@ -453,10 +550,23 @@
     { k: 'surprised', ms: 800, w: 0.08 }
   ];
 
+  /* 表情退场的「尾巴」有多长：先把幅度收小、附属元素淡掉，再真正摘掉表情 */
+  const MOOD_TAIL = {
+    pet: 920,
+    yawn: 620,
+    daze: 420,
+    happy: 300,
+    wink: 300,
+    sad: 300,
+    angry: 300,
+    surprised: 300
+  };
+
   let el = null;
   let bubbleTimer = null;
   let idleTimer = null;
   let moodTimer = null;
+  let tailTimer = null;
   let sleepTimer = null;
   let yawnTimer = null;
   let hoverTimer = null;
@@ -570,11 +680,11 @@
 
     if (Math.round(left) === Math.round(r.left) && Math.round(top) === Math.round(r.top)) return;
 
-    el.style.transition = 'left .18s ease, top .18s ease';
+    el.style.transition = 'left .3s cubic-bezier(.3,1.28,.55,1), top .3s cubic-bezier(.3,1.28,.55,1)';
     moveTo(left, top);
     setTimeout(() => {
       if (el) el.style.transition = '';
-    }, 220);
+    }, 320);
     setTimeout(savePos, 200);
   }
 
@@ -731,7 +841,7 @@
     petSamples = [];
     if (!petting) {
       petting = true;
-      delete el.dataset.tilt;
+      stopHover();
       setMood('pet', 0);
       say('嘿嘿…', 0, false);
     }
@@ -745,7 +855,8 @@
     if (petEndTimer) { clearTimeout(petEndTimer); petEndTimer = null; }
     if (!el) return;
     if (el.dataset.mood === 'pet') {
-      setMood('happy', 900);
+      // 走 920ms 的收尾：摇摆幅度递减、爱心飘散、腮红褪掉，而不是瞬间换脸
+      clearMood();
       if (!quiet) say('舒服…', 1100, false);
     }
   }
@@ -753,12 +864,18 @@
   /* ---------- 好奇：悬停一会儿不动手，它就歪头看你 ---------- */
   function stopHover() {
     if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
-    if (el) delete el.dataset.tilt;
+    if (!el || el.dataset.tilt !== '1') return;
+    // 不是立刻立正：先转过头一点点，再摆回来
+    el.dataset.tilt = 'out';
+    setTimeout(() => {
+      if (el && el.dataset.tilt === 'out') delete el.dataset.tilt;
+    }, 520);
   }
 
   function startHover() {
-    stopHover();
+    if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
     if (prefersReduced()) return;
+    if (el && el.dataset.tilt === 'out') delete el.dataset.tilt;
     hoverTimer = setTimeout(() => {
       hoverTimer = null;
       if (!el || drag || petting) return;
@@ -1006,16 +1123,40 @@
   }
 
   /* ---------- 表情 ---------- */
+  /* 立刻摘掉（切到工作状态时用，别让旧表情的尾巴拖住动画） */
+  function clearMoodNow() {
+    if (tailTimer) { clearTimeout(tailTimer); tailTimer = null; }
+    if (!el) return;
+    delete el.dataset.mood;
+    delete el.dataset.moodOut;
+  }
+
+  /* 带惯性地退场：先标记 data-mood-out 让 CSS 播收尾，时间到了再摘 */
   function clearMood() {
     if (!el) return;
     if (moodTimer) { clearTimeout(moodTimer); moodTimer = null; }
-    delete el.dataset.mood;
+    const cur = el.dataset.mood;
+    if (!cur) return;
+
+    const tail = prefersReduced() ? 0 : (MOOD_TAIL[cur] || 0);
+    if (!tail) { clearMoodNow(); return; }
+
+    el.dataset.moodOut = '1';
+    if (tailTimer) clearTimeout(tailTimer);
+    tailTimer = setTimeout(() => {
+      tailTimer = null;
+      if (!el || !el.dataset.moodOut) return;
+      delete el.dataset.mood;
+      delete el.dataset.moodOut;
+    }, tail);
   }
 
   /* ms = 0 表示一直保持，直到下次显式切换 */
   function setMood(name, ms) {
     if (!el || !name) return;
     if (moodTimer) { clearTimeout(moodTimer); moodTimer = null; }
+    if (tailTimer) { clearTimeout(tailTimer); tailTimer = null; }
+    delete el.dataset.moodOut;
     el.dataset.mood = name;
     if (ms) {
       moodTimer = setTimeout(() => {
@@ -1063,6 +1204,7 @@
       '<span class="qc-bot-motes"><i></i><i></i><i></i><i></i><i></i></span>' +
       '<svg class="qc-bot-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5 L10 17 L18.5 7.5"/></svg>' +
       '</span></span>' +
+      '<span class="qc-pomo"><span class="qc-pomo-t"></span><span class="qc-pomo-bar"><i></i></span></span>' +
       '<span class="qc-bot-bubble"><span class="qc-bot-bubble-txt"></span></span>';
 
     btn.addEventListener('click', (e) => {
@@ -1194,7 +1336,7 @@
     if (dustTimer) { clearTimeout(dustTimer); dustTimer = null; }
     delete el.dataset.dust;
     if (state === 'error') setMood('sad', 0);
-    else clearMood();
+    else clearMoodNow();
   }
 
   /* 气泡挂哪边：默认在机器人左侧，贴左缘就翻到右边；贴近顶部则挂到下方 */
@@ -1256,7 +1398,7 @@
 
   function destroy() {
     stopIdle();
-    clearMood();
+    clearMoodNow();
     stopFollow();
     stopHover();
     if (hopTimer) { clearTimeout(hopTimer); hopTimer = null; }

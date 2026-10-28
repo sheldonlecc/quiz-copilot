@@ -169,6 +169,8 @@
           if (!Q.mascot) return;
           if (S.showFab) Q.mascot.mount();
           Q.mascot.show(S.showFab);
+          // 重新挂载后计时牌是新的，把当前剩余时间补画上去
+          if (Q.pomo && Q.pomo.repaint) Q.pomo.repaint();
         }
       });
     } catch (e) {}
