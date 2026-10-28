@@ -154,10 +154,11 @@ Compress-Archive -Path quiz-copilot, 安装说明.html, 本地测试卷.html `
 对方解压后，双击 `安装说明.html`，照第 1 步加载 `quiz-copilot` 文件夹即可。
 **API Key 不能随包发**——Key 跟账号走，对方得自己申请。
 
-**2. 给仓库权限**
+**2. 直接发仓库链接**
 
-私有仓库在 Settings → Collaborators 里加对方 GitHub 用户名；要完全公开则 Settings → Danger Zone → Change visibility。
-注意公开后提交历史里的作者邮箱也会一起公开。
+仓库是公开的：<https://github.com/sheldonlecc/quiz-copilot>。对方点 **Code → Download ZIP** 或 `git clone` 即可。
+
+公开仓库默认只读；要让人能直接推代码，再在 Settings → Collaborators 里加对方用户名，或者让对方 Fork。
 
 **3. 上架商店**
 
