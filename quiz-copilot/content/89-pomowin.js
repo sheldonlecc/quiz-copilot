@@ -174,6 +174,10 @@
   .qc-pw-sum { display: flex; align-items: baseline; gap: 6px; margin-bottom: 12px; }
   .qc-pw-sum b { font-size: 26px; font-weight: 700; color: #f2f6ff; letter-spacing: -.5px; }
   .qc-pw-sum span { font-size: 12px; color: #7f8a9c; }
+  .qc-pw-brk {
+    display: block; font-style: normal; font-size: 10.5px;
+    color: #8a7f66; margin-top: 2px;
+  }
 
   .qc-pw-pie { display: flex; align-items: center; gap: 14px; }
   .qc-pw-donut {
@@ -362,7 +366,7 @@
   }
 
   function statsHTML() {
-    const st = Q.pomo ? Q.pomo.stats(range) : { total: 0, count: 0, byCat: {}, byDay: [] };
+    const st = Q.pomo ? Q.pomo.stats(range) : { total: 0, count: 0, partial: 0, byCat: {}, byDay: [] };
     const cats = Q.pomo ? Q.pomo.cats() : [];
 
     const segs = cats
@@ -409,7 +413,9 @@
         <button data-range="month" class="${range === 'month' ? 'on' : ''}">本月</button>
       </div>
 
-      <div class="qc-pw-sum"><b>${st.total}</b><span>分钟 · ${st.count} 个番茄</span></div>
+      <div class="qc-pw-sum"><b>${st.total}</b><span>分钟 · ${st.count} 个番茄${
+        st.partial ? `<em class="qc-pw-brk">另 ${st.partial} 段中断（已计入分钟）</em>` : ''
+      }</span></div>
 
       <div class="qc-pw-pie">
         <div class="qc-pw-donut" style="background:${bg}">

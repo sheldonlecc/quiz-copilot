@@ -11,6 +11,9 @@
   const FOCUS_MIN = [15, 25, 45, 60];
   const BREAK_MIN = [5, 10, 15];
 
+  const MIN_LOG_MS = 60000;      // 不足 1 分钟不计入（用户手动停掉的那一段）
+  const POMO_KEY = 'qcPomo';     // 正在跑的计时存这儿，换页 / 刷新都不会丢
+
   const DEFAULT_CATS = [
     { id: 'study', name: '学习', color: '#4f8cff' },
     { id: 'work', name: '工作', color: '#34d399' },
@@ -109,6 +112,8 @@
     const from = startOf(range || 'today');
     const list = data.sessions.filter((s) => s.start >= from);
     const total = list.reduce((a, b) => a + b.minutes, 0);
+    // 中途停下的也算时长，但不该算成「一个番茄」
+    const full = list.filter((s) => !s.partial);
     const byCat = {};
     list.forEach((s) => {
       byCat[s.catId] = (byCat[s.catId] || 0) + s.minutes;
@@ -128,7 +133,15 @@
       byDay.push({ date: d, minutes });
     }
 
-    return { total, count: list.length, byCat, byDay, list };
+    return {
+      total,
+      count: full.length,          // 完整走完的番茄数
+      partial: list.length - full.length,   // 中途停下的段数
+      segments: list.length,
+      byCat,
+      byDay,
+      list
+    };
   }
 
   /* ---------- 计时 ---------- */
@@ -226,6 +239,7 @@
     };
     said5 = false;
     said1 = false;
+    saveTimer();
     paint();
     if (Q.pomoWin) Q.pomoWin.refresh();
     botSay(`${PL(isBreak ? 'pomoBreak' : 'pomoStart', isBreak ? '休息一下' : '开始专注')} · ${mins} 分钟`, 2600, false);
@@ -240,7 +254,13 @@
       clearInterval(timer);
       timer = null;
     }
-    const had = !!(S.pomo && S.pomo.end);
+    const p = S.pomo;
+    const had = !!(p && p.end);
+    // 手动停止也要把已经专注的那段时间记上（不足 1 分钟由 logSession 自己跳过）
+    if (had) {
+      logSession(p, true);
+      clearTimer();
+    }
     S.pomo = null;
     doneUntil = 0;
     paint();
@@ -248,22 +268,53 @@
     if (had && !quiet) botSay(PL('pomoStop', '倒计时结束'), 1800, false);
   }
 
-  function logSession(p) {
+  /* 计时状态落盘：整页跳转会把 content script 整个销毁，光靠内存里的 S.pomo 会连人带账一起没 */
+  function saveTimer() {
+    try {
+      if (!S.pomo || !S.pomo.end) {
+        chrome.storage.local.remove(POMO_KEY);
+        return;
+      }
+      chrome.storage.local.set({ [POMO_KEY]: { ...S.pomo } });
+    } catch (e) {}
+  }
+
+  function clearTimer() {
+    try { chrome.storage.local.remove(POMO_KEY); } catch (e) {}
+  }
+
+  /* 记一段专注。endedEarly=true 表示用户中途点停止（也算时长，但不算一个番茄） */
+  function logSession(p, endedEarly) {
     if (!p || p.isBreak) return;
-    const minutes = Math.round(p.total / 60000);
-    if (minutes < 1) return;
+
+    const total = Number(p.total) || 0;
+    const startedAt = Number(p.startedAt) || (Date.now() - total);
+    // 以「真正经过了多久」为准，不是计划时长
+    const elapsed = Math.max(0, Math.min(total, Date.now() - startedAt));
+    if (elapsed < MIN_LOG_MS) return;   // 不满 1 分钟就不记
+
+    const id = 'p' + startedAt;
+    // 多标签页、跨页恢复都可能重复触发，同一个 startedAt 只记一次
+    if (data.sessions.some((s) => s.id === id)) return;
+
+    const minutes = Math.max(1, Math.round(elapsed / 60000));
 
     data.sessions.push({
-      id: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+      id,
       taskId: p.taskId || '',
       catId: p.taskId ? (taskOf(p.taskId) || {}).catId || 'other' : 'other',
-      start: p.startedAt || Date.now() - p.total,
-      minutes
+      start: startedAt,
+      minutes,
+      partial: !!endedEarly,
+      planned: Math.round(total / 60000)
     });
     data.sessions = data.sessions.slice(-2000);
 
-    const t = p.taskId ? taskOf(p.taskId) : null;
-    if (t) t.done = (t.done || 0) + 1;
+    // 只有完整走完的才算一个番茄，5 分钟的残段不该顶掉一个
+    if (!endedEarly) {
+      const t = p.taskId ? taskOf(p.taskId) : null;
+      if (t) t.done = (t.done || 0) + 1;
+    }
 
     persist();
     if (Q.pomoWin) Q.pomoWin.refresh();
@@ -280,7 +331,8 @@
     const left = p.end - Date.now();
     if (left <= 0) {
       const wasBreak = !!p.isBreak;
-      logSession(p);
+      logSession(p, false);   // 走完了：算一个完整番茄
+      clearTimer();
       S.pomo = null;
       if (timer) { clearInterval(timer); timer = null; }
 
@@ -319,6 +371,48 @@
     }
   }
 
+  /* 换页 / 刷新后把计时接上；如果离开期间已经走完，补一笔账再收摊 */
+  function restoreTimer() {
+    if (S.pomo && S.pomo.end) return;   // 同一页里重复 init，别覆盖正在跑的
+    try {
+      chrome.storage.local.get({ [POMO_KEY]: null }, (v) => {
+        const p = v && v[POMO_KEY];
+        if (!p || !p.end || !p.startedAt) return;
+        const now = Date.now();
+
+        if (p.end > now) {
+          S.pomo = p;
+          said5 = false;
+          said1 = false;
+          if (timer) clearInterval(timer);
+          timer = setInterval(tick, 1000);
+          paint();
+          if (Q.pomoWin) Q.pomoWin.refresh();
+          return;
+        }
+
+        // 页面上不在了，但时间确实过去了：按走完算
+        logSession(p, false);
+        clearTimer();
+        // 刚结束不久才提示「时间到」，隔了很久回来就别诈尸了
+        if (now - p.end < 120000) {
+          doneBreak = !!p.isBreak;
+          doneUntil = now + 6000;
+          paint();
+          if (Q.pomoWin) Q.pomoWin.refresh();
+          if (!p.isBreak) botSay(PL('pomoDone', '那段专注结束了'), 0, false);
+          setTimeout(() => {
+            if (doneUntil && Date.now() >= doneUntil) {
+              doneUntil = 0;
+              paint();
+              if (Q.pomoWin) Q.pomoWin.refresh();
+            }
+          }, 6200);
+        }
+      });
+    } catch (e) {}
+  }
+
   function init() {
     if (timer) {
       clearInterval(timer);
@@ -326,6 +420,7 @@
     }
     paint();
     load(() => {
+      restoreTimer();
       if (Q.pomoWin && Q.pomoWin.isOpen && Q.pomoWin.isOpen()) Q.pomoWin.refresh();
     });
   }
@@ -349,6 +444,10 @@
     curTask: () => curTask,
     stats,
     isLoaded: () => loaded,
+    sessions: () => data.sessions,
+    restoreTimer,
+    saveTimer,
+    MIN_LOG_MS,
     FOCUS_MIN,
     BREAK_MIN,
     isOn: () => !!(S.pomo && S.pomo.end)
