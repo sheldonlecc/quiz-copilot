@@ -131,6 +131,7 @@
     }
     parts.push(sep());
 
+    parts.push(row('autopage', '自动翻页', '', { on: !!S.autoPage }));
     parts.push(row('auto', '自动填', '', { on: !!S.autoFill }));
     const skinName = (Q.mascot && Q.mascot.SKINS && Q.mascot.getEl())
       ? (Q.mascot.getEl().dataset.skin || 'blue')
@@ -258,6 +259,13 @@
       try { chrome.storage.sync.set({ autoFill: S.autoFill }); } catch (e) {}
       if (Q.render) Q.render();
       if (bot) bot.say(S.autoFill ? '自动填：开' : '自动填：关', 1600, false);
+      return;
+    }
+    if (act === 'autopage') {
+      S.autoPage = !S.autoPage;
+      try { chrome.storage.sync.set({ autoPage: S.autoPage }); } catch (e) {}
+      if (Q.render) Q.render();
+      if (bot) bot.say(S.autoPage ? '自动翻页：开' : '自动翻页：关', 1600, false);
       return;
     }
     if (act === 'pomo-stop') {

@@ -97,7 +97,7 @@
 
   /* ---- 次级工具 ---- */
   .qc-tools {
-    display: flex; align-items: center; gap: 1px;
+    display: flex; align-items: center; gap: 1px; flex-wrap: wrap; row-gap: 3px;
     padding: 0 11px 9px; flex: 0 0 auto;
   }
   .qc-tool {

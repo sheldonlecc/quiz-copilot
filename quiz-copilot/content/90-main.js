@@ -17,6 +17,19 @@
   async function oneKeyFlow(opts) {
     const bot = Q.mascot;
     if (!bot) return;
+    const fromChain = !!(opts && opts.from === 'chain');
+
+    // 连续模式跑着的时候再点机器人 = 停下，别又叠一层
+    if (!fromChain && Q.chain && Q.chain.isOn()) {
+      Q.chain.stop();
+      return;
+    }
+
+    // 「自动翻页」开着：点一下就走连续流程（chain 内部会再调回来，别递归）
+    if (!fromChain && S.autoPage && Q.chain) {
+      Q.chain.start();
+      return;
+    }
 
     // 已经答完时，再点机器人 = 打开面板看答案
     const st = bot.getState();
@@ -153,8 +166,9 @@
   /* ---------- 启动 ---------- */
   function boot() {
     try {
-      chrome.storage.sync.get({ autoFill: true, showFab: true, botSkin: 'blue', selExplain: true }, (cfg) => {
+      chrome.storage.sync.get({ autoFill: true, showFab: true, botSkin: 'blue', selExplain: true, autoPage: false }, (cfg) => {
         S.autoFill = !!cfg.autoFill;
+        S.autoPage = !!cfg.autoPage;
         S.showFab = cfg.showFab !== false;
         S.selExplain = cfg.selExplain !== false;
         S.skin = cfg.botSkin || 'blue';
@@ -174,6 +188,7 @@
       chrome.storage.onChanged.addListener((changes, area) => {
         if (area !== 'sync') return;
         if (changes.autoFill) S.autoFill = !!changes.autoFill.newValue;
+        if (changes.autoPage) S.autoPage = !!changes.autoPage.newValue;
         if (changes.selExplain) S.selExplain = changes.selExplain.newValue !== false;
         if (changes.botSkin) {
           S.skin = changes.botSkin.newValue || 'blue';

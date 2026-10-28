@@ -6,6 +6,7 @@
     apiKey: '',
     model: 'deepseek-chat',
     autoFill: true,
+    autoPage: false,
     showFab: true,
     selExplain: true,
     botSkin: 'blue'
@@ -76,6 +77,7 @@
     $('model').value = cfg.model || DEFAULTS.model;
     $('provider').value = cfg.provider || detectProvider(cfg.baseUrl);
     $('swAuto').classList.toggle('on', !!cfg.autoFill);
+    $('swPage').classList.toggle('on', !!cfg.autoPage);
     $('swFab').classList.toggle('on', cfg.showFab !== false);
     $('swSel').classList.toggle('on', cfg.selExplain !== false);
     $('skin').value = cfg.botSkin || 'blue';
@@ -96,6 +98,11 @@
   $('swAuto').addEventListener('click', () => {
     const on = $('swAuto').classList.toggle('on');
     chrome.storage.sync.set({ autoFill: on });
+  });
+
+  $('swPage').addEventListener('click', () => {
+    const on = $('swPage').classList.toggle('on');
+    chrome.storage.sync.set({ autoPage: on });
   });
 
   $('swFab').addEventListener('click', () => {
@@ -128,6 +135,7 @@
         baseUrl,
         model,
         autoFill: $('swAuto').classList.contains('on'),
+        autoPage: $('swPage').classList.contains('on'),
         showFab: $('swFab').classList.contains('on'),
         selExplain: $('swSel').classList.contains('on'),
         botSkin: $('skin').value

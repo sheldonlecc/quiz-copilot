@@ -29,6 +29,7 @@
     status: '',
     error: '',
     autoFill: false,
+    autoPage: false,
     showFab: true,
     diag: '',
     lastUsage: null,

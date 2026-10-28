@@ -190,6 +190,9 @@
         <button class="qc-tool" data-act="selection">读取选中文字</button>
         <span class="qc-sep"></span>
         <button class="qc-tool" data-act="diag">诊断</button>
+        <button class="qc-tool qc-auto ${S.autoPage ? 'on' : ''}" data-act="toggle-page" title="开着时，点机器人会一页页做到底">
+          <span class="qc-track"><i></i></span>自动翻页
+        </button>
         <button class="qc-tool qc-auto ${S.autoFill ? 'on' : ''}" data-act="toggle-auto" title="开着时，第 1 步算完会自动执行第 2 步">
           <span class="qc-track"><i></i></span>自动填
         </button>
@@ -236,6 +239,12 @@
     if (act === 'toggle-auto') {
       S.autoFill = !S.autoFill;
       chrome.storage.sync.set({ autoFill: S.autoFill });
+      render();
+      return;
+    }
+    if (act === 'toggle-page') {
+      S.autoPage = !S.autoPage;
+      chrome.storage.sync.set({ autoPage: S.autoPage });
       render();
       return;
     }

@@ -25,7 +25,9 @@
   let running = false;
   let stopFlag = false;
   let pages = 0;
+  let total = 0;
   let resumePages = 0;
+  let resumeTotal = 0;
   let savedAutoFill = null;
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -102,6 +104,7 @@
         [KEY]: {
           on: true,
           pages: pages,
+          total: total,
           href: location.href,
           base: baseOf(location.href),
           updatedAt: Date.now()
@@ -207,17 +210,20 @@
         finish('error', '这页没拿到答案，先停在这儿');
         return;
       }
+      total += answered;
 
       const btn = findNext();
       if (!btn) {
-        const n = S.questions.filter((q) => q.answer).length;
-        finish('done', `全部做完：${pages} 页 / ${n} 题，检查后自己交卷`);
+        finish('done', `全部做完：${pages} 页 / ${total} 题，检查后自己交卷`);
         return;
       }
 
       if (bot) bot.say(`第 ${pages} 页完成，翻页…`, 0, false);
 
       const prev = snapshot();
+      // 关键：点之前先存。整页跳转会把当前脚本连同后面的代码一起销毁，
+      // 存晚了就会出现「翻到第 2 页还显示第 1 页」。
+      saveState();
       try {
         btn.click();
       } catch (e) {
@@ -247,6 +253,7 @@
     running = true;
     stopFlag = false;
     pages = keepPages ? resumePages : 0;
+    total = keepPages ? resumeTotal : 0;
 
     // 连续做题必须真的填进页面，否则翻页没意义；结束后还原用户的开关
     savedAutoFill = S.autoFill;
@@ -289,6 +296,7 @@
         if (baseOf(location.href) !== c.base) return clearState();  // 不是同一份卷子
         if (location.href === c.href) return clearState();           // 这一页已经处理过了
         resumePages = Number(c.pages) || 0;
+        resumeTotal = Number(c.total) || 0;
         setTimeout(() => {
           if (!running) start(true);
         }, 900);
