@@ -25,10 +25,12 @@
   .qc-bot:active .qc-bot-body { transform: scale(.93); }
 
   .qc-bot-body {
+    width: 38px; height: 40px;
     display: flex; flex-direction: column; align-items: center;
     transform-origin: 50% 100%;
     animation: qc-bot-tilt 13s ease-in-out infinite;
-    transition: transform .16s ease;
+    transition: transform .16s ease, width .2s ease, height .2s ease,
+                border-radius .2s ease, background .2s ease, box-shadow .2s ease;
   }
   .qc-bot-antenna {
     position: relative; width: 2px; height: 7px; border-radius: 1px;
@@ -397,27 +399,36 @@
   }
 
 
-  /* ---------- 变成小球滚过去 ---------- */
+  /* ---------- 化成球滚过去 ---------- */
   .qc-bot[data-form="ball"] { cursor: default; }
   .qc-bot[data-form="ball"] .qc-bot-body {
     position: relative;
-    width: 24px; height: 24px;
+    width: 34px; height: 34px;
     border-radius: 50%;
-    background: radial-gradient(circle at 32% 28%, #a8c4ff 0%, #4f8cff 46%, #2749c4 100%);
-    box-shadow: 0 4px 12px rgba(40,80,200,.55), inset 0 -2px 5px rgba(0,0,0,.28);
+    background: radial-gradient(circle at 34% 28%, #b3cdff 0%, #4f8cff 48%, #2749c4 100%);
+    box-shadow: 0 5px 14px rgba(40,80,200,.55), inset 0 -3px 6px rgba(0,0,0,.3);
     animation: none;
     transform-origin: 50% 50%;
-    transition: none;
+    overflow: hidden;
+    /* 这里不能给 transform 加过渡，滚动是逐帧算的，加了会拖尾 */
+    transition: width .2s ease, height .2s ease, border-radius .2s ease,
+                background .2s ease, box-shadow .2s ease;
     transform: rotate(var(--qc-roll, 0rad));
   }
   /* 球上的一点高光，转起来才看得出在滚 */
   .qc-bot[data-form="ball"] .qc-bot-body::after {
-    content: ''; position: absolute; left: 50%; top: 3px;
-    width: 4px; height: 4px; margin-left: -2px; border-radius: 50%;
-    background: rgba(255,255,255,.8);
+    content: ''; position: absolute; left: 50%; top: 5px;
+    width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%;
+    background: rgba(255,255,255,.85);
+    box-shadow: 0 0 6px rgba(255,255,255,.6);
   }
+  /* 头和天线一边缩小一边淡出，看着像「塌」进球里 */
   .qc-bot[data-form="ball"] .qc-bot-head,
-  .qc-bot[data-form="ball"] .qc-bot-antenna,
+  .qc-bot[data-form="ball"] .qc-bot-antenna {
+    opacity: 0;
+    transform: scale(.35);
+    transition: opacity .14s ease, transform .2s ease;
+  }
   .qc-bot[data-form="ball"] .qc-bot-tick,
   .qc-bot[data-form="ball"] .qc-bot-bubble,
   .qc-bot[data-form="ball"] .qc-pomo { opacity: 0 !important; }
@@ -988,26 +999,53 @@
   let rollOrigin = null;
 
   function rollToXY(tx, ty) {
-    return new Promise((done) => {
-      if (!el) return done();
+    return new Promise((resolve) => {
+      if (!el) return resolve();
+
       const from = el.getBoundingClientRect();
       const dx = tx - from.left;
       const dy = ty - from.top;
       const dist = Math.hypot(dx, dy);
-      const dur = Math.max(300, Math.min(900, dist / 1.1));
-      const R = 12;   // 球半径，转过的弧度 = 位移 / 半径
+      // 0.5px/ms 左右：600px 大概滚 1.2 秒，别像弹射一样
+      const dur = Math.max(450, Math.min(1400, dist / 0.5));
+      const R = 17;   // 球半径，转过的弧度 = 位移 / 半径
+      // 往左滚就逆时针，往右滚就顺时针；竖着走用纵向位移给一点滚动感
+      const axis = Math.abs(dx) >= Math.abs(dy) ? dx : dy * 0.9;
       const t0 = performance.now();
 
-      const step = (t) => {
-        if (!el) return done();
-        const p = Math.min(1, (t - t0) / dur);
-        const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      let finished = false;
+      let watchdog = null;
+
+      const place = (e) => {
+        if (!el) return;
         el.style.left = from.left + dx * e + 'px';
         el.style.top = from.top + dy * e + 'px';
-        el.style.setProperty('--qc-roll', (dist * e) / R + 'rad');
-        if (p < 1) requestAnimationFrame(step);
-        else done();
+        el.style.setProperty('--qc-roll', (axis * e) / R + 'rad');
       };
+
+      const end = () => {
+        if (finished) return;
+        finished = true;
+        if (watchdog) clearTimeout(watchdog);
+        resolve();
+      };
+
+      const step = (t) => {
+        if (finished) return;
+        const p = Math.min(1, (t - t0) / dur);
+        // 起停缓一点，中间匀速，看起来才像滚
+        const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+        place(e);
+        if (p < 1) requestAnimationFrame(step);
+        else end();
+      };
+
+      // 兜底：某些环境（后台标签页、无头浏览器）rAF 不跑，别把 await 卡死
+      watchdog = setTimeout(() => {
+        place(1);
+        end();
+      }, dur + 600);
+
       requestAnimationFrame(step);
     });
   }

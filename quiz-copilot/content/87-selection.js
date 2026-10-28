@@ -197,8 +197,7 @@
     }
     Q.render();
 
-    // 解释完了自己滚回原位，别一直挡着正文
-    if (bot && bot.rollHome) setTimeout(() => bot.rollHome(), 1600);
+    // 就停在选中内容旁边，不再自己滚回去
   }
 
   function init() {
