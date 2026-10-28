@@ -228,7 +228,7 @@
 
     S.panelEl.innerHTML = `
       <div class="qc-head">
-        <div class="qc-logo">AI</div>
+        <div class="qc-logo">${Q.icon ? Q.icon.svg(21) : ''}</div>
         <div class="qc-title">答题助手<span class="qc-ver">v${esc(VER)}</span></div>
         <div class="qc-count ${qs.length ? '' : 'zero'}">${qs.length ? qs.length + ' 题' : '未读题'}</div>
         <button class="qc-x" data-act="close" title="关闭">×</button>

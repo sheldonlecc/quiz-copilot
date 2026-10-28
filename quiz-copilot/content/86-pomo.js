@@ -205,6 +205,9 @@
     if (Q.pomoWin) Q.pomoWin.tick();
   }
 
+  /* 台词统一从 81-lines 取 */
+  const PL = (name, fb) => (Q.lines && Q.lines.pick ? Q.lines.pick(name, fb) : (fb || ''));
+
   function botSay(text, ms, clickable) {
     if (Q.mascot) Q.mascot.say(text, ms, clickable);
   }
@@ -225,7 +228,7 @@
     said1 = false;
     paint();
     if (Q.pomoWin) Q.pomoWin.refresh();
-    botSay(`${isBreak ? '休息' : '专注'} ${mins} 分钟，开始`, 2600, false);
+    botSay(`${PL(isBreak ? 'pomoBreak' : 'pomoStart', isBreak ? '休息一下' : '开始专注')} · ${mins} 分钟`, 2600, false);
     if (Q.mascot) Q.mascot.setMood('happy', 1200);
     if (timer) clearInterval(timer);
     timer = setInterval(tick, 1000);
@@ -242,7 +245,7 @@
     doneUntil = 0;
     paint();
     if (Q.pomoWin) Q.pomoWin.refresh();
-    if (had && !quiet) botSay('倒计时结束', 1800, false);
+    if (had && !quiet) botSay(PL('pomoStop', '倒计时结束'), 1800, false);
   }
 
   function logSession(p) {
@@ -290,7 +293,7 @@
         Q.mascot.hop();
         Q.mascot.setMood('happy', 4200);
       }
-      botSay(wasBreak ? '休息结束，继续吧' : '时间到，起来走走', 0, false);
+      botSay(PL(wasBreak ? 'pomoBreakDone' : 'pomoDone', wasBreak ? '休息结束，继续吧' : '时间到，起来走走'), 0, false);
       setTimeout(() => {
         if (Q.mascot) Q.mascot.say('', 0, false);
       }, 14000);

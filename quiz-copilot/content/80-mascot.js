@@ -197,24 +197,32 @@
   .qc-bot[data-mood="pet"] .qc-bot-heart:nth-child(2) { animation-delay: .5s; margin-left: 9px; }
   .qc-bot[data-mood="pet"] .qc-bot-heart:nth-child(3) { animation-delay: 1s; margin-left: -8px; }
 
-  /* 落了灰：身上几粒灰点 */
-  .qc-bot-motes {
-    position: absolute; inset: 0; opacity: 0;
-    transition: opacity .35s, transform .35s;
-    pointer-events: none;
+  /* 结网：很久没人理，右上角结一张蜘蛛网，网上挂只小蜘蛛 */
+  .qc-bot-web {
+    position: absolute; right: -4px; top: -3px;
+    width: 30px; height: 30px;
+    opacity: 0; pointer-events: none;
+    transform-origin: 100% 0;
+    transform: rotate(-14deg) scale(.45);
+    transition: opacity .45s ease, transform .55s cubic-bezier(.34,1.25,.64,1);
   }
-  .qc-bot[data-dust="1"] .qc-bot-motes { opacity: 1; }
-  .qc-bot[data-dust="puff"] .qc-bot-motes { opacity: 0; transform: translateY(7px); }
-  .qc-bot[data-dust="puff"] .qc-bot-body { animation: qc-bot-dustshake .38s ease-out 1; }
-  .qc-bot-motes i {
-    position: absolute; width: 2px; height: 2px; border-radius: 50%;
-    background: rgba(226,232,240,.55);
+  .qc-bot[data-web="1"] .qc-bot-web { opacity: .85; transform: rotate(0) scale(1); }
+  .qc-bot[data-web="1"] .qc-bot-web svg { animation: qc-bot-websway 6.5s ease-in-out infinite; }
+  /* 一碰就散：网甩开淡掉，蜘蛛掉下去 */
+  .qc-bot[data-web="clear"] .qc-bot-web { opacity: 0; transform: rotate(8deg) scale(1.3); }
+  .qc-bot[data-web="clear"] .qc-web-spider {
+    transform: translateY(16px) rotate(26deg); opacity: 0;
   }
-  .qc-bot-motes i:nth-child(1) { left: 5px; top: 6px; }
-  .qc-bot-motes i:nth-child(2) { right: 4px; top: 9px; }
-  .qc-bot-motes i:nth-child(3) { left: 9px; bottom: 7px; }
-  .qc-bot-motes i:nth-child(4) { right: 8px; bottom: 5px; }
-  .qc-bot-motes i:nth-child(5) { left: 17px; top: 2px; }
+  .qc-bot[data-web="clear"] .qc-bot-body { animation: qc-bot-webshake .42s ease-out 1; }
+  .qc-bot-web svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .qc-bot-web path {
+    fill: none; stroke: rgba(236,242,252,.58);
+    stroke-width: .7; stroke-linecap: round;
+  }
+  .qc-web-spider {
+    transform-origin: 0 0;
+    transition: transform .46s cubic-bezier(.5,0,.9,.4), opacity .36s ease .05s;
+  }
 
   /* 鼠标靠近：眼睛跟着走 */
   .qc-bot[data-tracking="1"] .qc-bot-eyes {
@@ -493,12 +501,16 @@
     87%  { transform: rotate(-.5deg) }
     100% { transform: rotate(0) }
   }
-  @keyframes qc-bot-dustshake {
+  @keyframes qc-bot-webshake {
     0% { transform: rotate(0) }
     22% { transform: rotate(-2.6deg) }
     55% { transform: rotate(2.2deg) }
     78% { transform: rotate(-.9deg) }
     100% { transform: rotate(0) }
+  }
+  @keyframes qc-bot-websway {
+    0%, 100% { transform: rotate(0) }
+    50% { transform: rotate(-2.4deg) }
   }
   @keyframes qc-bot-heart {
     0% { opacity: 0; transform: translate(0, 0) rotate(45deg) scale(.55) }
@@ -572,6 +584,37 @@
     'L7.7 5.4L7.5 6.4L6.9 7.2L6.0 7.9L4.9 8.1L3.7 8.0L2.7 7.4L1.9 6.5L1.5 5.3L1.5 4.0L2.0 2.7' +
     'L2.9 1.7L4.2 1.1L5.7 1.0L7.1 1.4L8.3 2.3L9.2 3.6';
 
+  /* 右上角的蜘蛛网：以方框右上角为圆心向左侧铺开，三层弧，末端挂只小蜘蛛 */
+  const WEB_SVG = (() => {
+    const CX = 24, CY = 0, R = 23;
+    const angs = [180, 157.5, 135, 112.5, 90].map((d) => (d * Math.PI) / 180);
+    const pt = (a, r) => [CX + Math.cos(a) * r, CY + Math.sin(a) * r];
+    const f = (n) => Number(n.toFixed(1));
+    let d = '';
+    angs.forEach((a) => {
+      const p = pt(a, R);
+      d += 'M' + CX + ' ' + CY + 'L' + f(p[0]) + ' ' + f(p[1]);
+    });
+    [7, 13, 19].forEach((r) => {
+      for (let i = 0; i < angs.length - 1; i++) {
+        const a = pt(angs[i], r);
+        const b = pt(angs[i + 1], r);
+        // 控制点往圆心收一点，弧看起来才有下坠感
+        const mx = CX + ((a[0] + b[0]) / 2 - CX) * 0.8;
+        const my = CY + ((a[1] + b[1]) / 2 - CY) * 0.8;
+        d += 'M' + f(a[0]) + ' ' + f(a[1]) + 'Q' + f(mx) + ' ' + f(my) + ' ' + f(b[0]) + ' ' + f(b[1]);
+      }
+    });
+    const spider =
+      '<g transform="translate(16.6 9.4)"><g class="qc-web-spider">' +
+      '<circle r="1.9" fill="#1b202a" stroke="rgba(236,242,252,.7)" stroke-width=".45"/>' +
+      '<circle cy="-2.2" r="1.15" fill="#1b202a" stroke="rgba(236,242,252,.7)" stroke-width=".45"/>' +
+      '<path d="M-1.2 -.3L-3 -1.6M-1.4 .3L-3.2 .9M-1 1.1L-2.7 2.5' +
+      'M1.2 -.3L3 -1.6M1.4 .3L3.2 .9M1 1.1L2.7 2.5"/>' +
+      '</g></g>';
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + d + '"/>' + spider + '</svg>';
+  })();
+
   /* 交互参数 */
   const FOLLOW_R = 220;      // 鼠标进入这个半径，眼睛开始跟
   const WAKE_R = 150;        // 睡着的它，鼠标走到这么近会惊醒
@@ -589,7 +632,7 @@
   const PET_STROKES = 4;       // 窗口内来回这么多次算摸头
   const PET_IDLE_MS = 1100;    // 停下这么久就结束摸头
   const SWEEP_WINDOW = 1500;   // 镜像扫视的判定窗口
-  const DUST_AFTER = 95000;    // 多久没人碰它就落灰
+  const WEB_AFTER = 82000;     // 多久没人理它就结网
 
   /* 待机时随机换的表情（权重加起来 0.52，剩下 48% 就是单纯眨个眼） */
   const IDLE_MOODS = [
@@ -612,6 +655,8 @@
   };
 
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  /* 台词统一从 81-lines 拿；拿不到就用兜底那句，保证不会哑 */
+  const L = (name, fb) => (Q.lines && Q.lines.pick ? Q.lines.pick(name, fb) : (fb || ''));
 
   let el = null;
   let bubbleTimer = null;
@@ -621,7 +666,7 @@
   let sleepTimer = null;
   let yawnTimer = null;
   let hoverTimer = null;
-  let dustTimer = null;
+  let webTimer = null;
   let drag = null;
   let suppressClick = false;
 
@@ -646,7 +691,8 @@
   let petEndTimer = null;
   let sweepSamples = [];
   let sweepUntil = 0;
-  let dustOn = false;
+  let webOn = false;
+  let lastPetSay = 0;
 
   function ensureStyle(shadow) {
     if (shadow.querySelector('style[data-qc-style="mascot"]')) return;
@@ -751,7 +797,7 @@
   function wake() {
     if (!el || el.dataset.mood !== 'sleepy') return;
     setMood('surprised', 450);
-    say('！', 700, false);
+    say(L('wake', '！'), 700, false);
     startIdle();
   }
 
@@ -814,7 +860,7 @@
     if (el) delete el.dataset.spin;
     // 不用定时器收尾：等松手后走「惯性 → 闭眼甩头 → 待机」
     setMood('dizzy', 0);
-    say('晕…', 1500, false);
+    say(L('dizzy', '晕…'), 1500, false);
     if (dizzyFallback) clearTimeout(dizzyFallback);
     dizzyFallback = setTimeout(() => {
       dizzyFallback = null;
@@ -840,7 +886,7 @@
     if (dizzyFallback) { clearTimeout(dizzyFallback); dizzyFallback = null; }
     delete el.dataset.spin;
     setMood('daze', DAZE_MS);
-    say('……', DAZE_MS, false);
+    say(L('daze', '……'), DAZE_MS, false);
   }
 
   function feedDrag(e) {
@@ -897,7 +943,12 @@
       petting = true;
       stopHover();
       setMood('pet', 0);
-      say('嘿嘿…', 0, false);
+      say(L('pet', '嘿嘿…'), 0, false);
+      lastPetSay = Date.now();
+    } else if (Date.now() - lastPetSay > 2600) {
+      // 摸久了换一句，别一句话挂在那儿半天
+      lastPetSay = Date.now();
+      say(L('pet', '嘿嘿…'), 0, false);
     }
     if (petEndTimer) clearTimeout(petEndTimer);
     petEndTimer = setTimeout(() => endPet(false), PET_IDLE_MS);
@@ -911,7 +962,7 @@
     if (el.dataset.mood === 'pet') {
       // 走 920ms 的收尾：摇摆幅度递减、爱心飘散、腮红褪掉，而不是瞬间换脸
       clearMood();
-      if (!quiet) say('舒服…', 1100, false);
+      if (!quiet) say(L('petEnd', '舒服…'), 1100, false);
     }
   }
 
@@ -942,27 +993,35 @@
     }, HOVER_TILT_MS);
   }
 
-  /* ---------- 落灰：很久没人理，身上积一层灰，一碰就抖掉 ---------- */
-  function scheduleDust() {
-    if (dustTimer) { clearTimeout(dustTimer); dustTimer = null; }
+  /* ---------- 结网：很久没人理，身上结一层蜘蛛网，一碰就散 ---------- */
+  function scheduleWeb() {
+    if (webTimer) { clearTimeout(webTimer); webTimer = null; }
     if (prefersReduced()) return;
-    dustTimer = setTimeout(() => {
-      dustTimer = null;
+    webTimer = setTimeout(() => {
+      webTimer = null;
       if (!el || drag || el.dataset.state !== 'idle') return;
       if (el.dataset.mood) return;
-      dustOn = true;
-      el.dataset.dust = '1';
-    }, DUST_AFTER);
+      growWeb();
+    }, WEB_AFTER);
   }
 
-  function shakeDust() {
-    if (!el || !dustOn) return;
-    dustOn = false;
-    if (dustTimer) { clearTimeout(dustTimer); dustTimer = null; }
-    el.dataset.dust = 'puff';
+  /* 长网（也留给预览页/测试手动触发） */
+  function growWeb(quiet) {
+    if (!el) return;
+    webOn = true;
+    el.dataset.web = '1';
+    if (!quiet) say(L('web', '都长蜘蛛网了'), 4200, false);
+  }
+
+  function clearWeb() {
+    if (!el || !webOn) return;
+    webOn = false;
+    if (webTimer) { clearTimeout(webTimer); webTimer = null; }
+    el.dataset.web = 'clear';
+    say(L('webClear', '呼，清爽了'), 1600, false);
     setTimeout(() => {
-      if (el && el.dataset.dust === 'puff') delete el.dataset.dust;
-    }, 420);
+      if (el && el.dataset.web === 'clear') delete el.dataset.web;
+    }, 540);
   }
 
   /* ---------- 镜像扫视：你在它面前快速左右晃鼠标，它跟着扫，然后自己晕了 ---------- */
@@ -986,7 +1045,7 @@
     sweepSamples = [];
     sweepUntil = now + 7000;
     makeDizzy();
-    say('别晃啦…', 1800, false);
+    say(L('shake', '别晃啦…'), 1800, false);
   }
 
   /* ---------- 蹦跶 ---------- */
@@ -1112,7 +1171,7 @@
   function tripleTap() {
     if (!el) return;
     setMood('angry', 1000);
-    say('戳我干嘛…', 1300, false);
+    say(L('triple', '戳我干嘛…'), 1300, false);
   }
 
   /* 双击：蹦一下 + 开心，不当成一键解题 */
@@ -1120,7 +1179,7 @@
     if (!el) return;
     hop();
     if (el.dataset.state === 'idle') setMood('happy', 800);
-    say('嘿嘿', 900, false);
+    say(L('double', '嘿嘿'), 900, false);
   }
 
   function scheduleWander(delay) {
@@ -1212,7 +1271,7 @@
         settleDizzy();
       } else {
         setMood('happy', 900);
-        say('放这儿啦', 1400, false);
+        say(L('drop', '放这儿啦'), 1400, false);
       }
     }
   }
@@ -1220,9 +1279,9 @@
   /* ---------- 悬停 ---------- */
   function onEnter() {
     if (!el) return;
-    if (el.dataset.state === 'idle' && !bubbleTimer) say('点我一键解题', 0, false);
+    if (el.dataset.state === 'idle' && !bubbleTimer) say(L('hover', '点我一键解题'), 0, false);
     if (el.dataset.state === 'idle' && !el.dataset.mood) setMood('happy', 1400);
-    shakeDust();
+    clearWeb();
     startHover();
   }
 
@@ -1239,7 +1298,7 @@
   function onHoverMove(e) {
     if (!el || drag || e.buttons) return;
     if (el.dataset.state !== 'idle') return;
-    if (dustOn) shakeDust();
+    if (webOn) clearWeb();
     if (el.dataset.mood && el.dataset.mood !== 'pet') return;
     feedPet(e.clientX, Date.now());
   }
@@ -1278,7 +1337,7 @@
     }, 50000);
     // 醒着的时候：隔一会儿挪一小段，别等太久
     scheduleWander(7000 + Math.random() * 6000);
-    scheduleDust();
+    scheduleWeb();
   }
 
   function stopIdle() {
@@ -1339,7 +1398,7 @@
     if (pokeTimes.length < 3) return;
     pokeTimes = [];
     setMood('angry', 1000);
-    say('别戳啦，在算了', 1400, false);
+    say(L('poke', '别戳啦，在算了'), 1400, false);
   }
 
   /* ---------- 构建 ---------- */
@@ -1366,7 +1425,7 @@
       '<span class="qc-bot-spiral"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="' + SPIRAL + '"/></svg><svg viewBox="0 0 10 10" aria-hidden="true"><path d="' + SPIRAL + '"/></svg></span>' +
       '<span class="qc-bot-zzz"><i>z</i><i>z</i><i>z</i></span>' +
       '<span class="qc-bot-hearts"><i class="qc-bot-heart"></i><i class="qc-bot-heart"></i><i class="qc-bot-heart"></i></span>' +
-      '<span class="qc-bot-motes"><i></i><i></i><i></i><i></i><i></i></span>' +
+      '<span class="qc-bot-web">' + WEB_SVG + '</span>' +
       '<svg class="qc-bot-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5 L10 17 L18.5 7.5"/></svg>' +
       '</span></span>' +
       '<span class="qc-ball"><i></i></span>' +
@@ -1383,7 +1442,7 @@
       if (petting) { endPet(true); return; }
 
       stopHover();
-      shakeDust();
+      clearWeb();
 
       // 它正在算的时候戳它，戳三次会烦
       if (Q.isBusy && Q.isBusy()) {
@@ -1499,9 +1558,9 @@
     stopIdle();
     endPet(true);
     stopHover();
-    dustOn = false;
-    if (dustTimer) { clearTimeout(dustTimer); dustTimer = null; }
-    delete el.dataset.dust;
+    webOn = false;
+    if (webTimer) { clearTimeout(webTimer); webTimer = null; }
+    delete el.dataset.web;
     if (state === 'error') setMood('sad', 0);
     else clearMoodNow();
   }
@@ -1578,7 +1637,7 @@
     if (dizzySettle) { clearTimeout(dizzySettle); dizzySettle = null; }
     if (dizzyFallback) { clearTimeout(dizzyFallback); dizzyFallback = null; }
     if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
-    if (dustTimer) { clearTimeout(dustTimer); dustTimer = null; }
+    if (webTimer) { clearTimeout(webTimer); webTimer = null; }
     if (petEndTimer) { clearTimeout(petEndTimer); petEndTimer = null; }
     tapCount = 0;
     doublePlayed = false;
@@ -1586,7 +1645,7 @@
     petting = false;
     petSamples = [];
     sweepSamples = [];
-    dustOn = false;
+    webOn = false;
     if (rafId && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(rafId);
     rafId = 0;
     dragSamples = [];
@@ -1615,5 +1674,5 @@
     return SKINS[(i + 1) % SKINS.length];
   }
 
-  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, rollTo, rollHome, wanderOnce: wander, setSkin, nextSkin, getEl: () => el, CSS, SKINS };
+  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, rollTo, rollHome, growWeb, clearWeb, wanderOnce: wander, setSkin, nextSkin, getEl: () => el, CSS, SKINS };
 })();

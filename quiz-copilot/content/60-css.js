@@ -35,11 +35,10 @@
     flex: 0 0 auto;
   }
   .qc-logo {
-    width: 21px; height: 21px; border-radius: 6px; flex: 0 0 auto;
-    background: linear-gradient(135deg, #4f8cff, #7c5cff);
+    width: 21px; height: 21px; flex: 0 0 auto;
     display: flex; align-items: center; justify-content: center;
-    font-size: 10px; font-weight: 700; color: #fff; letter-spacing: -.3px;
   }
+  .qc-logo svg { display: block; width: 21px; height: 21px; }
   .qc-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
   .qc-ver {
     font-family: ui-monospace, Consolas, monospace;

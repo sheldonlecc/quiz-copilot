@@ -30,11 +30,10 @@
   .qc-sel[data-show="1"] { opacity: 1; transform: translateY(0) scale(1); }
   .qc-sel:hover { background: #242a38; border-color: rgba(127,163,255,.7); }
   .qc-sel-badge {
-    width: 16px; height: 16px; border-radius: 5px; flex: 0 0 auto;
-    background: linear-gradient(135deg, #4f8cff, #7c5cff);
+    width: 17px; height: 17px; flex: 0 0 auto;
     display: flex; align-items: center; justify-content: center;
-    font-size: 8.5px; font-weight: 700; letter-spacing: -.3px; color: #fff;
   }
+  .qc-sel-badge svg { display: block; }
   `;
 
   let chip = null;
@@ -58,7 +57,7 @@
     if (chip && chip.isConnected) return chip;
     const el = document.createElement('div');
     el.className = 'qc-sel';
-    el.innerHTML = '<span class="qc-sel-badge">AI</span><span>解释这段</span>';
+    el.innerHTML = '<span class="qc-sel-badge">' + (Q.icon ? Q.icon.svg(17) : '') + '</span><span>解释这段</span>';
     el.addEventListener('pointerdown', (e) => {
       // 按住别把选区弄没了，否则点下去时 selection 就空了
       e.preventDefault();

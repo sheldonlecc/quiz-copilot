@@ -117,7 +117,9 @@
 <div class="wrap">
 
   <header>
-    <div class="logo">AI</div>
+    <div class="logo">
+      <svg width="56" height="56" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><defs><linearGradient id="qcLogoTileBig" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f8cff"/><stop offset="1" stop-color="#7c5cff"/></linearGradient></defs><rect x=".5" y=".5" width="31" height="31" rx="9" fill="url(#qcLogoTileBig)"/><rect x="15.45" y="8.6" width="1.1" height="4" rx=".55" fill="#fff" opacity=".85"/><circle cx="16" cy="6.7" r="1.75" fill="#9df0bb"/><rect x="7.5" y="12" width="17" height="14.2" rx="5" fill="#fff"/><rect x="11.5" y="17.1" width="2.7" height="4.1" rx="1.35" fill="#3f6be6"/><rect x="17.6" y="17.1" width="2.7" height="4.1" rx="1.35" fill="#3f6be6"/></svg>
+    </div>
     <h1>答题助手 QuizCopilot</h1>
     <p class="sub">自动读取网页题目，AI 给出答案和解析，可选一键勾选 / 填入；选中一段话还能让 AI 讲明白</p>
   </header>
@@ -156,12 +158,12 @@
       <span id="p">（解压目录）\quiz-copilot</span>
       <button class="copy" id="btn">复制路径</button>
     </div>
-    <p style="font-size:13.5px;color:#7f8695">装好后工具栏会出现一个蓝色的 <b>AI</b> 图标。</p>
+    <p style="font-size:13.5px;color:#7f8695">装好后工具栏会出现一个蓝色的小机器人图标（白色脑袋、绿天线那颗）。</p>
   </div>
 
   <div class="card">
     <h2><span class="num">2</span>怎么确认更新已经生效</h2>
-    <p>面板标题右边有一个小徽标，写着当前版本号，例如 <code>v1.15.2</code>。这个数字是插件运行时直接读自己 manifest 得来的，不会骗人。</p>
+    <p>面板标题右边有一个小徽标，写着当前版本号，例如 <code>v1.16.0</code>。这个数字是插件运行时直接读自己 manifest 得来的，不会骗人。</p>
     <p><b>如果你看到的还是旧版本号，或者工具栏里没有「诊断」按钮</b>，说明页面里跑的还是旧代码，按这个顺序操作：</p>
     <ol>
       <li>地址栏输入 <code>edge://extensions</code>（Chrome 用 <code>chrome://extensions</code>）</li>
@@ -177,7 +179,7 @@
 
   <div class="card">
     <h2><span class="num">3</span>填 API Key</h2>
-    <p>点工具栏的 AI 图标，在弹出的设置页里操作：</p>
+    <p>点工具栏的小机器人图标，在弹出的设置页里操作：</p>
     <ol>
       <li>服务商选 <b>DeepSeek</b>（已经预填好地址和模型，不用改）</li>
       <li>把 API Key 粘进去</li>
@@ -261,7 +263,7 @@
       <tr><td><kbd>Alt</kbd>+<kbd>Q</kbd></td><td>打开 / 收起答题面板</td></tr>
     </table>
     <p style="margin-top:14px">所有小动作的收尾都带惯性：摸头松手后身体摇摆幅度递减、爱心边飘边淡、腮红慢慢褪；歪头回正会转过头一点点再摆回来；
-      落灰抖掉带一下余震；连状态色和眼睛形状都是渐变过去的，不会「一松手动画就没了」。</p>
+      蜘蛛网散掉时带一下余震；连状态色和眼睛形状都是渐变过去的，不会「一松手动画就没了」。</p>
     <p style="margin-top:14px">它自己会做的事：闲着 7～13 秒会像史莱姆那样蹦一小段（之后每隔 12～26 秒一次，一次挪 100 多像素并记住新位置）；
       鼠标靠近它、正在算题、或者已经睡着的时候不会乱跑。</p>
     <p style="margin-top:8px">没人理 42 秒会先打个哈欠，50 秒打瞌睡，睡着后鼠标靠近会先惊一下再醒，醒来重新开始蹦。</p>
@@ -363,7 +365,7 @@
     <table>
       <tr><th>现象</th><th>原因与处理</th></tr>
       <tr><td>chrome://extensions 打不开</td><td>Edge 不支持这个地址，用 <code>edge://extensions</code>。这是最常见的一个。</td></tr>
-      <tr><td>Alt+Q 没反应</td><td>和别的扩展或输入法抢了同一个快捷键。去 <code>edge://extensions/shortcuts</code> 改成别的组合，或者直接点页面右下角的悬浮 AI 按钮。</td></tr>
+      <tr><td>Alt+Q 没反应</td><td>和别的扩展或输入法抢了同一个快捷键。去 <code>edge://extensions/shortcuts</code> 改成别的组合，或者直接点页面右下角的悬浮小机器人。</td></tr>
       <tr><td>重启 Edge 后插件没了</td><td>Edge 偶尔会禁用「非商店来源」的扩展。去 <code>edge://extensions</code> 把它重新打开即可，不用重装。</td></tr>
       <tr><td>更新后还是老样子</td><td>没在扩展页点 ↻ 重新加载。只按页面 F5 不算更新，见上面第 2 步。</td></tr>
     </table>
@@ -424,6 +426,15 @@
     <h2>更新日志</h2>
     <p>每个版本改了什么，完整版见仓库根目录的 <code>CHANGELOG.md</code>。下面是最新的几条。</p>
     <details open>
+      <summary>v1.16.0 · 2026-10-28</summary>
+      <ul>
+        <li><b>新增</b>：台词搬进 <code>81-lines.js</code>，摸头 / 双击 / 三击 / 被戳 / 晕 / 拖放 / 结网各有十几句，最近说过的不会马上重复</li>
+        <li><b>新增</b>：图标统一走 <code>Q.icon</code> 接口，面板、划词按钮、设置页、说明页、工具栏都是同一只小机器人</li>
+        <li><b>变更</b>：闲置不再「落灰」，改成右上角结蜘蛛网，网上挂只小蜘蛛；一碰就散</li>
+        <li><b>变更</b>：空闲说话更勤快（正常档 45 秒一句），问候和提示也补了词</li>
+      </ul>
+    </details>
+    <details>
       <summary>v1.15.2 · 2026-10-28</summary>
       <ul>
         <li><b>修复</b>：化形时会闪出蓝色方块、没化形完就开始滚</li>
