@@ -76,6 +76,43 @@
       .join('\n\n');
   }
 
+  /* ---------- 答案 / 解析对账 ---------- */
+  /* 模型经常「解析里算到 1.41，answer 却写 1.00」，这里把它抓出来 */
+  const CLAIM_RE = /(?:≈|=|等于|得到|结果为|应为|答案是)\s*(-?\d+(?:\.\d+)?)/g;
+
+  function lastNumericClaim(reason) {
+    const s = String(reason || '');
+    if (!s) return null;
+    CLAIM_RE.lastIndex = 0;
+    let m = null;
+    let last = null;
+    while ((m = CLAIM_RE.exec(s)) !== null) last = m[1];
+    if (last == null) return null;
+    const n = Number(last);
+    return isFinite(n) ? n : null;
+  }
+
+  /* 只对「答案是纯数值 + 解析给了明确数值」的题做检查，宁可不报也别误报 */
+  function numericConflict(q) {
+    if (!q || !q.answer) return null;
+    if (q.type !== 'blank' && q.type !== 'matrix') return null;
+
+    const ans = String(q.answer).trim();
+    if (!/^-?\d+(?:\.\d+)?$/.test(ans)) return null;
+
+    const claim = lastNumericClaim(q.reason);
+    if (claim == null) return null;
+
+    const a = Number(ans);
+    if (!isFinite(a)) return null;
+
+    const diff = Math.abs(a - claim);
+    const tol = Math.max(0.02, Math.abs(claim) * 0.02);
+    if (diff <= tol) return null;
+
+    return { answer: ans, suggest: String(claim) };
+  }
+
   // opts.autoFill === false 时不自动填（一键流程要自己控制节奏）
   async function solve(opts) {
     const allowAutoFill = !(opts && opts.autoFill === false);
@@ -116,6 +153,9 @@
             q.answer = '';
           }
         }
+
+        // 答案和解析对不上时留个记号，面板会标出来，也能一键改用解析里的值
+        q.conflict = numericConflict(q);
       });
 
       const missing = S.questions.filter((q) => !q.answer).length;
@@ -186,5 +226,5 @@
   }
 
 
-  Object.assign(Q, { buildPrompt, solve, sendBg });
+  Object.assign(Q, { buildPrompt, solve, sendBg, lastNumericClaim, numericConflict });
 })();

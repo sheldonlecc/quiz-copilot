@@ -123,6 +123,10 @@
             </div>
             <div class="qc-stem">${esc(q.stem)}</div>
             ${band}
+            ${q.conflict ? `<div class="qc-conflict">
+              <span>解析算出 <b>${esc(q.conflict.suggest)}</b>，答案却是 <b>${esc(q.conflict.answer)}</b></span>
+              <button class="qc-mini" data-act="use-suggest" data-idx="${q.index}">用 ${esc(q.conflict.suggest)}</button>
+            </div>` : ''}
             ${q.reason ? `<div class="qc-reason">${esc(q.reason)}</div>` : ''}
             <div class="qc-card-acts">
               <button class="qc-mini" data-act="fill-one" data-idx="${q.index}">填入本题</button>
@@ -249,6 +253,18 @@
       setStatus(`读到 ${S.questions.length} 道题，正在作答…`, 'busy');
       render();
       return solve();
+    }
+    if (act === 'use-suggest') {
+      const q = S.questions.find((x) => x.index === idx);
+      if (!q || !q.conflict) return;
+      const val = q.conflict.suggest;
+      q.answer = val;
+      q.conflict = null;
+      const err2 = fillOne(q);
+      q.fillState = err2 ? 'fail' : 'ok';
+      setStatus(err2 ? `第 ${idx} 题：${err2}` : `第 ${idx} 题已改用 ${val}。`, err2 ? 'warn' : 'ok');
+      render();
+      return;
     }
     if (act === 'fill-one') {
       const q = S.questions.find((x) => x.index === idx);

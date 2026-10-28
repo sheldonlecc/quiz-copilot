@@ -183,6 +183,25 @@
     margin-bottom: 7px;
   }
 
+  /* ---- 答案与解析对不上 ---- */
+  .qc-conflict {
+    display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+    background: rgba(251,191,36,.08);
+    border: 1px solid rgba(251,191,36,.32);
+    border-radius: 8px;
+    padding: 6px 8px; margin-bottom: 7px;
+    font-size: 11.5px; color: #e3bd76; line-height: 1.45;
+  }
+  .qc-conflict span { flex: 1 1 auto; min-width: 0; }
+  .qc-conflict b { color: #ffd98a; font-weight: 700; }
+  .qc-conflict .qc-mini {
+    flex: 0 0 auto; color: #ffd98a;
+    border-color: rgba(251,191,36,.42);
+  }
+  .qc-conflict .qc-mini:hover {
+    color: #1b1f28; background: #ffd98a; border-color: transparent;
+  }
+
   /* ---- 划词解释卡片 ---- */
   .qc-exp {
     background: rgba(79,140,255,.06);

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>小机器人 · v1.12.1</title>
+<title>小机器人 · v1.12.2</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -40,7 +40,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>小机器人<span class="v">v1.12.1</span></h1>
+  <h1>小机器人<span class="v">v1.12.2</span></h1>
   <div class="sub">
     <b>现在能拖着走了。</b>按住右下角那个，拖到哪儿它就待在哪儿，下次打开还在那儿。<br>
     表情只靠眼睛变：开心眯成半圆、委屈时外眼角垂下来、不高兴反过来，睡着飘 zzz；被甩晕了是螺旋眼，松手后靠惯性再转一会儿，然后闭眼 ><，<b>左右晃的幅度一下比一下小，停住一下才恢复</b>。<br>
@@ -412,7 +412,13 @@ window.__QC = {
   }
   .qc-pomo[data-mode="break"] .qc-pomo-bar i { background: linear-gradient(90deg, #34d399, #0f9d63); }
   .qc-pomo[data-mode="done"] .qc-pomo-bar i { background: #fbbf24; width: 0 !important; }
-  .qc-bot[data-v="down"] .qc-pomo { bottom: auto; top: calc(100% + 7px); }
+  /* 机器人贴近屏幕顶部时，气泡会挂到下方，计时牌就挪到左边，避免撞在一起 */
+  .qc-bot[data-v="down"] .qc-pomo {
+    bottom: auto; top: 50%; left: auto; right: calc(100% + 6px);
+    transform: translate(4px, -50%) scale(.9);
+    transform-origin: 100% 50%;
+  }
+  .qc-bot[data-v="down"] .qc-pomo[data-on="1"] { transform: translate(0, -50%) scale(1); }
   @keyframes qc-pomo-blink { 0%, 100% { opacity: 1 } 50% { opacity: .32 } }
 
   .qc-bot-bubble {
@@ -733,7 +739,10 @@ window.__QC = {
       chrome.storage.sync.get({ botPos: null }, (cfg) => {
         const p = cfg && cfg.botPos;
         if (!el || !p) return;
-        if (typeof p.left === 'number' && typeof p.top === 'number') moveTo(p.left, p.top);
+        if (typeof p.left === 'number' && typeof p.top === 'number') {
+          moveTo(p.left, p.top);
+          placeBubble();
+        }
       });
     } catch (e) {}
   }
@@ -1075,6 +1084,7 @@ window.__QC = {
     hop();
     el.style.transition = 'left .62s cubic-bezier(.34,1.2,.64,1), top .62s cubic-bezier(.34,1.2,.64,1)';
     moveTo(p.left, p.top);
+    placeBubble();
     setTimeout(() => {
       if (el) el.style.transition = '';
     }, 650);
@@ -1127,6 +1137,7 @@ window.__QC = {
     setTimeout(() => { suppressClick = false; }, 80);
     snapToEdge();
     savePos();
+    placeBubble();
     if (el) {
       // 刚被甩晕的话，走惯性 → 闭眼甩头，别立刻换笑脸
       if (el.dataset.mood === 'dizzy') {
@@ -1429,9 +1440,12 @@ window.__QC = {
   function placeBubble() {
     if (!el) return;
     const r = el.getBoundingClientRect();
-    if (r.left < 260) el.dataset.bubble = 'right';
+    // 移动/吸附有过渡动画，rect 拿到的是中间值，优先用 style 上的目标坐标
+    const left = el.style.left ? parseFloat(el.style.left) : r.left;
+    const top = el.style.top ? parseFloat(el.style.top) : r.top;
+    if (!isNaN(left) && left < 260) el.dataset.bubble = 'right';
     else delete el.dataset.bubble;
-    if (r.top < 80) el.dataset.v = 'down';
+    if (!isNaN(top) && top < 80) el.dataset.v = 'down';
     else delete el.dataset.v;
   }
 

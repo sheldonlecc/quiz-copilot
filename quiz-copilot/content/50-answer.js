@@ -250,9 +250,13 @@
       if (err) failCount++;
       else okCount++;
     });
+    const conflictCount = S.questions.filter((q) => q.conflict).length;
     setStatus(
-      `已填入 ${okCount} 道题${failCount ? `，${failCount} 道失败（可手动核对）` : ''}。请自行核对后提交。`,
-      failCount ? 'warn' : 'ok'
+      `已填入 ${okCount} 道题` +
+        (conflictCount ? `，${conflictCount} 道答案与解析对不上（面板里标黄，可一键改用解析值）` : '') +
+        (failCount ? `，${failCount} 道失败（可手动核对）` : '') +
+        '。请自行核对后提交。',
+      failCount || conflictCount ? 'warn' : 'ok'
     );
     render();
     return { ok: okCount, total: answered, fail: failCount };

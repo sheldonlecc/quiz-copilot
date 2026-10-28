@@ -59,6 +59,7 @@
       }
 
       const answered = S.questions.filter((q) => q.answer).length;
+      const conflict = S.questions.filter((q) => q.conflict).length;
       if (!answered) {
         bot.setState('error');
         bot.say('没拿到答案', 6000, true);
@@ -68,8 +69,8 @@
 
       // 自动填开着 → 直接写进页面
       if (!S.autoFill) {
-        bot.setState('done');
-        bot.say(`答完 ${answered} 题，点这里看答案`, 0, true);
+        bot.setState(conflict ? 'warn' : 'done');
+        bot.say(conflict ? `答完 ${answered} 题，${conflict} 题与解析对不上` : `答完 ${answered} 题，点这里看答案`, 0, true);
         bot.settleAfter(4200);
         return;
       }
@@ -78,9 +79,15 @@
       const st2 = fillAll() || { ok: 0, total: answered, fail: 0 };
       const total = st2.total || answered;
 
-      if (st2.fail) {
+      if (st2.fail || conflict) {
         bot.setState('warn');
-        bot.say(`已填 ${st2.ok}/${total}，${st2.fail} 题需手动`, 0, true);
+        bot.say(
+          conflict
+            ? `已填 ${st2.ok}/${total}，${conflict} 题与解析对不上`
+            : `已填 ${st2.ok}/${total}，${st2.fail} 题需手动`,
+          0,
+          true
+        );
         bot.settleAfter(4200);
       } else {
         bot.setState('done');
