@@ -30,6 +30,7 @@
     error: '',
     autoFill: false,
     autoPage: false,
+    pageLimit: 30,
     showFab: true,
     diag: '',
     lastUsage: null,

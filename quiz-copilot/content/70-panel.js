@@ -237,14 +237,20 @@
       return;
     }
     if (act === 'toggle-auto') {
-      S.autoFill = !S.autoFill;
-      chrome.storage.sync.set({ autoFill: S.autoFill });
+      if (Q.setAutoFill) Q.setAutoFill(!S.autoFill);
+      else {
+        S.autoFill = !S.autoFill;
+        chrome.storage.sync.set({ autoFill: S.autoFill });
+      }
       render();
       return;
     }
     if (act === 'toggle-page') {
-      S.autoPage = !S.autoPage;
-      chrome.storage.sync.set({ autoPage: S.autoPage });
+      if (Q.setAutoPage) Q.setAutoPage(!S.autoPage);
+      else {
+        S.autoPage = !S.autoPage;
+        chrome.storage.sync.set({ autoPage: S.autoPage });
+      }
       render();
       return;
     }

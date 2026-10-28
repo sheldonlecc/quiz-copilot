@@ -119,6 +119,32 @@
   Q.oneKeyFlow = oneKeyFlow;
   Q.isBusy = () => flowBusy || S.busy;
 
+  /* ---------- 两个开关的联动 ---------- */
+  /* 连做必须把答案写进页面，否则翻页没有意义；所以不允许「翻页开、自动填关」这种组合 */
+  Q.setAutoFill = (on) => {
+    S.autoFill = !!on;
+    if (!S.autoFill) S.autoPage = false;
+    try {
+      chrome.storage.sync.set({ autoFill: S.autoFill, autoPage: S.autoPage });
+    } catch (e) {}
+  };
+
+  Q.setAutoPage = (on) => {
+    S.autoPage = !!on;
+    if (S.autoPage) S.autoFill = true;
+    try {
+      chrome.storage.sync.set({ autoFill: S.autoFill, autoPage: S.autoPage });
+    } catch (e) {}
+  };
+
+  Q.setPageLimit = (n) => {
+    const v = Math.max(1, Math.min(200, Math.round(Number(n) || 30)));
+    S.pageLimit = v;
+    try {
+      chrome.storage.sync.set({ pageLimit: v });
+    } catch (e) {}
+  };
+
   /* 气泡上那个「详情」：没读到题就把完整诊断摊开，读完题就直接看答案 */
   Q.bubbleAction = () => {
     if (!S.questions.length && !S.diag && diagnose) S.diag = diagnose();
@@ -142,12 +168,6 @@
       return true;
     }
 
-    if (msg.type === 'QC_CHAIN') {
-      if (Q.chain) Q.chain.start();
-      sendResponse({ ok: !!Q.chain });
-      return true;
-    }
-
     if (msg.type === 'QC_PING') {
       sendResponse({ ok: true, hasPanel: !!(S.panelEl && S.panelEl.isConnected) });
       return true;
@@ -166,9 +186,14 @@
   /* ---------- 启动 ---------- */
   function boot() {
     try {
-      chrome.storage.sync.get({ autoFill: true, showFab: true, botSkin: 'blue', selExplain: true, autoPage: false }, (cfg) => {
+      chrome.storage.sync.get(
+        { autoFill: true, showFab: true, botSkin: 'blue', selExplain: true, autoPage: false, pageLimit: 30 },
+        (cfg) => {
         S.autoFill = !!cfg.autoFill;
         S.autoPage = !!cfg.autoPage;
+        // 兼容老配置：出现「翻页开、填关」就按联动规则修正
+        if (S.autoPage) S.autoFill = true;
+        S.pageLimit = Number(cfg.pageLimit) || 30;
         S.showFab = cfg.showFab !== false;
         S.selExplain = cfg.selExplain !== false;
         S.skin = cfg.botSkin || 'blue';
@@ -187,8 +212,14 @@
     try {
       chrome.storage.onChanged.addListener((changes, area) => {
         if (area !== 'sync') return;
-        if (changes.autoFill) S.autoFill = !!changes.autoFill.newValue;
-        if (changes.autoPage) S.autoPage = !!changes.autoPage.newValue;
+        if (changes.autoFill || changes.autoPage) {
+          if (changes.autoFill) S.autoFill = !!changes.autoFill.newValue;
+          if (changes.autoPage) S.autoPage = !!changes.autoPage.newValue;
+          // 无论从哪个入口改，最后都收敛到「翻页开 → 填一定开」
+          if (S.autoPage) S.autoFill = true;
+          if (!S.autoFill) S.autoPage = false;
+        }
+        if (changes.pageLimit) S.pageLimit = Number(changes.pageLimit.newValue) || 30;
         if (changes.selExplain) S.selExplain = changes.selExplain.newValue !== false;
         if (changes.botSkin) {
           S.skin = changes.botSkin.newValue || 'blue';

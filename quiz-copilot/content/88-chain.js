@@ -11,7 +11,7 @@
   const S = Q.S;
 
   const KEY = 'chainState';
-  const MAX_PAGES = 30;          // 上限，防死循环
+  const MAX_PAGES = 30;          // 默认上限，用户可在菜单里改（S.pageLimit）
   const PAGE_TIMEOUT = 15000;    // 点完下一页等多久算失败
   const RESUME_TTL = 3 * 60 * 1000; // 跨页状态多久过期
 
@@ -179,8 +179,9 @@
     const bot = Q.mascot;
 
     while (!stopFlag) {
-      if (pages >= MAX_PAGES) {
-        finish('warn', `到 ${MAX_PAGES} 页上限了，先停一下`);
+      const maxPages = Math.max(1, Number(S.pageLimit) || MAX_PAGES);
+      if (pages >= maxPages) {
+        finish('warn', `到 ${maxPages} 页上限了，先停一下`);
         return;
       }
       pages++;
@@ -312,6 +313,6 @@
     looksNext,
     baseOf,
     isOn: () => running && !stopFlag,
-    info: () => ({ on: running && !stopFlag, pages, max: MAX_PAGES })
+    info: () => ({ on: running && !stopFlag, pages, max: Math.max(1, Number(S.pageLimit) || MAX_PAGES) })
   };
 })();

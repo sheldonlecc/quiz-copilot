@@ -7,6 +7,7 @@
     model: 'deepseek-chat',
     autoFill: true,
     autoPage: false,
+    pageLimit: 30,
     showFab: true,
     selExplain: true,
     botSkin: 'blue'
@@ -78,6 +79,7 @@
     $('provider').value = cfg.provider || detectProvider(cfg.baseUrl);
     $('swAuto').classList.toggle('on', !!cfg.autoFill);
     $('swPage').classList.toggle('on', !!cfg.autoPage);
+    $('pageLimit').value = String(cfg.pageLimit || 30);
     $('swFab').classList.toggle('on', cfg.showFab !== false);
     $('swSel').classList.toggle('on', cfg.selExplain !== false);
     $('skin').value = cfg.botSkin || 'blue';
@@ -97,12 +99,20 @@
   /* ---------- 开关 ---------- */
   $('swAuto').addEventListener('click', () => {
     const on = $('swAuto').classList.toggle('on');
-    chrome.storage.sync.set({ autoFill: on });
+    // 不填就别翻页了，否则两个开关互相矛盾
+    if (!on) $('swPage').classList.remove('on');
+    chrome.storage.sync.set({ autoFill: on, autoPage: $('swPage').classList.contains('on') });
   });
 
   $('swPage').addEventListener('click', () => {
     const on = $('swPage').classList.toggle('on');
-    chrome.storage.sync.set({ autoPage: on });
+    // 连做必须写进页面，所以翻页一开就把自动填也带上
+    if (on) $('swAuto').classList.add('on');
+    chrome.storage.sync.set({ autoPage: on, autoFill: $('swAuto').classList.contains('on') });
+  });
+
+  $('pageLimit').addEventListener('change', (e) => {
+    chrome.storage.sync.set({ pageLimit: Number(e.target.value) || 30 });
   });
 
   $('swFab').addEventListener('click', () => {
@@ -136,6 +146,7 @@
         model,
         autoFill: $('swAuto').classList.contains('on'),
         autoPage: $('swPage').classList.contains('on'),
+        pageLimit: Number($('pageLimit').value) || 30,
         showFab: $('swFab').classList.contains('on'),
         selExplain: $('swSel').classList.contains('on'),
         botSkin: $('skin').value
@@ -182,23 +193,6 @@
         });
       }
     );
-  });
-
-  /* ---------- 连续做题 ---------- */
-  $('chain').addEventListener('click', async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.id) return;
-    if (/^(chrome|edge|about|chrome-extension):/i.test(tab.url || '')) {
-      setStatus('浏览器内部页面无法注入，请在答题网页上使用。', 'err');
-      return;
-    }
-    chrome.tabs.sendMessage(tab.id, { type: 'QC_CHAIN' }, () => {
-      if (chrome.runtime.lastError) {
-        setStatus('这个页面还没注入脚本。刷新一下页面（F5）再试。', 'err');
-        return;
-      }
-      window.close();
-    });
   });
 
   /* ---------- 打开面板 ---------- */
