@@ -6,6 +6,8 @@ _thumbs/
 *.tmp
 *.log
 _s*.html
+_test*.html
+_diag.html
 _pet*.png
 _faces*.png
 _shot*.png

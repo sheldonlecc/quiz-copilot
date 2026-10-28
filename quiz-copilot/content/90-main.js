@@ -7,7 +7,7 @@
   if (Q.__booted) return;
   Q.__booted = true;
 
-  const { S, extractAll, openPanel, togglePanel, render, solve, fillAll, noQuestionHint } = Q;
+  const { S, extractAll, openPanel, togglePanel, render, solve, fillAll, noQuestionHint, diagnose } = Q;
 
   let flowBusy = false;
 
@@ -38,8 +38,9 @@
       const qs = extractAll();
       if (!qs.length) {
         bot.setState('error');
-        bot.say(noQuestionHint().slice(0, 30), 6000, true);
-        bot.settleAfter(7000);
+        // 气泡只说结论，具体原因放在面板里，别把一整段诊断塞进气泡
+        bot.say('这页没认出题目，点这里看原因', 9000, true);
+        bot.settleAfter(10000);
         return;
       }
 
@@ -98,6 +99,13 @@
   Q.oneKeyFlow = oneKeyFlow;
   Q.isBusy = () => flowBusy || S.busy;
 
+  /* 气泡上那个「详情」：没读到题就把完整诊断摊开，读完题就直接看答案 */
+  Q.bubbleAction = () => {
+    if (!S.questions.length && !S.diag && diagnose) S.diag = diagnose();
+    openPanel();
+    render();
+  };
+
   /* ---------- 来自后台 / 弹窗的消息 ---------- */
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (!msg || typeof msg !== 'object') return;
@@ -132,10 +140,18 @@
   /* ---------- 启动 ---------- */
   function boot() {
     try {
-      chrome.storage.sync.get({ autoFill: true, showFab: true }, (cfg) => {
+      chrome.storage.sync.get({ autoFill: true, showFab: true, botSkin: 'blue', selExplain: true }, (cfg) => {
         S.autoFill = !!cfg.autoFill;
         S.showFab = cfg.showFab !== false;
-        if (Q.mascot) Q.mascot.mount();
+        S.selExplain = cfg.selExplain !== false;
+        S.skin = cfg.botSkin || 'blue';
+        if (Q.mascot) {
+          Q.mascot.mount();
+          if (Q.mascot.setSkin) Q.mascot.setSkin(S.skin);
+        }
+        if (Q.menu && Q.menu.mount) Q.menu.mount();
+        if (Q.pomo && Q.pomo.init) Q.pomo.init();
+        if (Q.sel && Q.sel.init) Q.sel.init();
       });
     } catch (e) {}
 
@@ -143,6 +159,11 @@
       chrome.storage.onChanged.addListener((changes, area) => {
         if (area !== 'sync') return;
         if (changes.autoFill) S.autoFill = !!changes.autoFill.newValue;
+        if (changes.selExplain) S.selExplain = changes.selExplain.newValue !== false;
+        if (changes.botSkin) {
+          S.skin = changes.botSkin.newValue || 'blue';
+          if (Q.mascot && Q.mascot.setSkin) Q.mascot.setSkin(S.skin);
+        }
         if (changes.showFab) {
           S.showFab = changes.showFab.newValue !== false;
           if (!Q.mascot) return;

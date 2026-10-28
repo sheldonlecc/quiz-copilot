@@ -31,7 +31,11 @@
     autoFill: false,
     showFab: true,
     diag: '',
-    lastUsage: null
+    lastUsage: null,
+    skin: 'blue',
+    selExplain: true,
+    explain: null,   // 划词解释的结果：{ src, body, loading, error }
+    pomo: null       // 番茄钟：{ end, total, timer }
   };
 
   /* ============================================================

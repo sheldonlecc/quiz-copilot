@@ -182,6 +182,35 @@
     padding-left: 8px; border-left: 2px solid rgba(255,255,255,.1);
     margin-bottom: 7px;
   }
+
+  /* ---- 划词解释卡片 ---- */
+  .qc-exp {
+    background: rgba(79,140,255,.06);
+    border: 1px solid rgba(79,140,255,.24);
+    border-radius: 11px;
+    padding: 9px 10px 10px;
+    margin: 3px 0 8px;
+  }
+  .qc-exp.bad { border-color: rgba(248,113,113,.4); background: rgba(248,113,113,.06); }
+  .qc-exp-hd {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11.5px; font-weight: 600; color: #9dc0ff;
+    margin-bottom: 6px;
+  }
+  .qc-exp-hd span { flex: 1 1 auto; }
+  .qc-exp-src {
+    font-size: 11.5px; color: #8b93a3; line-height: 1.5;
+    border-left: 2px solid rgba(79,140,255,.35);
+    padding-left: 8px; margin-bottom: 7px;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden; word-break: break-word;
+  }
+  .qc-exp-body {
+    font-size: 12.5px; color: #cdd3dd; line-height: 1.65;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .qc-exp-body.loading { color: #7f8a9c; }
+  .qc-exp-body.bad { color: #ffb3b3; }
   .qc-card-acts { display: flex; gap: 6px; }
   .qc-mini {
     font-family: inherit; font-size: 11px; cursor: pointer;

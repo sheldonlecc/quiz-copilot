@@ -136,6 +136,25 @@
     const canFill = !busy && qs.some((q) => q.answer);
     const solveLabel = busy ? '作答中…' : qs.length ? '重新读取' : '读取并解答';
 
+    // 划词解释的结果卡片，排在最前面（它是「临时任务」，不该被题目挤下去）
+    const ex = S.explain;
+    const expCard = !ex
+      ? ''
+      : `<div class="qc-exp${ex.error ? ' bad' : ''}">
+          <div class="qc-exp-hd">
+            <span>划词解释</span>
+            <button class="qc-mini" data-act="exp-close">收起</button>
+          </div>
+          <div class="qc-exp-src">${esc(ex.src)}</div>
+          ${
+            ex.loading
+              ? '<div class="qc-exp-body loading">正在解释…</div>'
+              : ex.error
+              ? `<div class="qc-exp-body bad">${esc(ex.error)}</div>`
+              : `<div class="qc-exp-body">${esc(ex.body)}</div>`
+          }
+        </div>`;
+
     S.panelEl.innerHTML = `
       <div class="qc-head">
         <div class="qc-logo">AI</div>
@@ -172,7 +191,7 @@
         </button>
       </div>
 
-      <div class="qc-list">${cards}</div>
+      <div class="qc-list">${expCard}${cards}</div>
 
       <div class="qc-foot ${S.statusKind || ''}"><i class="qc-dot"></i><span>${esc(S.status || '就绪')}</span></div>
     `;
@@ -190,6 +209,10 @@
     const idx = Number(e.currentTarget.getAttribute('data-idx') || 0);
 
     if (act === 'close') return closePanel();
+    if (act === 'exp-close') {
+      S.explain = null;
+      return render();
+    }
     if (act === 'selection') return extractFromSelection();
     if (act === 'diag') {
       S.diag = diagnose();

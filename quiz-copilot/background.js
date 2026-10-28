@@ -34,6 +34,19 @@ const SYSTEM_PROMPT = [
   '7. 如果题目内容明显残缺或无法理解，answer 填 "A"，reason 写 "题干不完整，建议人工核对"。'
 ].join('\n');
 
+/* 划词解释用的提示词：不答题，只讲人话 */
+const EXPLAIN_PROMPT = [
+  '你是一个讲课很清楚的助教。用户会给你从网页上选中一小段文字（可能是教材、题目、代码、英文段落），请你用中文解释它。',
+  '',
+  '要求：',
+  '1. 先用一句话说清“这段在讲什么”，再展开关键点；',
+  '2. 遇到专业术语，用类比或生活化的例子讲明白；',
+  '3. 如果这段是英文，先给中文意思，再解释难点；',
+  '4. 控制在 200 字以内，不要开场客套，不要重复原文；',
+  '5. 如果这段文字本身残缺、没有上下文导致无法判断，就直接说明“信息不足”，不要编造。',
+  '6. 只输出解释正文，不要用 markdown 标题、不要加“解释：”前缀。'
+].join('\n');
+
 /* ---------------- 配置 ---------------- */
 
 async function getConfig() {
@@ -101,7 +114,7 @@ async function callChat(userText, opts = {}) {
     model: cfg.model || DEFAULTS.model,
     temperature: typeof cfg.temperature === 'number' ? cfg.temperature : 0.2,
     messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: opts.system || SYSTEM_PROMPT },
       { role: 'user', content: userText }
     ]
   };
@@ -122,6 +135,31 @@ async function callChat(userText, opts = {}) {
     throw new Error('模型没有返回内容。原始响应：' + JSON.stringify(json).slice(0, 300));
   }
   return { content, usage: json.usage || null, model: json.model || cfg.model };
+}
+
+/* 纯文本通道：不要求 JSON，直接拿回复（划词解释、摘要都用它） */
+async function callChatPlain(userText, system, timeout) {
+  const cfg = await getConfig();
+  if (!cfg.apiKey || !cfg.apiKey.trim()) {
+    throw new Error('还没有填写 API Key。点浏览器右上角的扩展图标，填入 Key 并保存即可。');
+  }
+  const json = await postChat(
+    cfg,
+    {
+      model: cfg.model || DEFAULTS.model,
+      temperature: 0.3,
+      messages: [
+        { role: 'system', content: system || EXPLAIN_PROMPT },
+        { role: 'user', content: userText }
+      ]
+    },
+    timeout || 60000
+  );
+  const content = json?.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error('模型没有返回内容。原始响应：' + JSON.stringify(json).slice(0, 300));
+  }
+  return { content: String(content).trim(), usage: json.usage || null };
 }
 
 /* ---------------- 答案解析 ---------------- */
@@ -212,6 +250,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const { content, usage, model } = await callChat(msg.text, { timeout: 120000 });
         const answers = parseAnswers(content);
         sendResponse({ ok: true, answers, usage, model });
+      } catch (e) {
+        sendResponse({ ok: false, error: String(e && e.message || e) });
+      }
+    })();
+    return true;
+  }
+
+  if (msg.type === 'QC_EXPLAIN') {
+    (async () => {
+      try {
+        const r = await callChatPlain(msg.text, msg.system, 60000);
+        sendResponse({ ok: true, text: r.content, usage: r.usage });
       } catch (e) {
         sendResponse({ ok: false, error: String(e && e.message || e) });
       }
