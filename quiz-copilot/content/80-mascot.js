@@ -199,7 +199,7 @@
 
   /* 结网：很久没人理，右上角结一张蜘蛛网，网上挂只小蜘蛛 */
   .qc-bot-web {
-    position: absolute; right: -4px; top: -3px;
+    position: absolute; right: -5px; top: -7px;
     width: 30px; height: 30px;
     opacity: 0; pointer-events: none;
     transform-origin: 100% 0;
@@ -276,7 +276,7 @@
     position: absolute; right: -14px; top: -16px;
     width: 26px; height: 28px;
     opacity: 0; pointer-events: none;
-    transition: opacity .25s;
+    transition: opacity .25s, transform .38s cubic-bezier(.34,1.15,.64,1);
   }
   .qc-bot[data-mood="sleepy"] .qc-bot-zzz { opacity: 1; }
   .qc-bot-zzz i {
@@ -292,6 +292,8 @@
   .qc-bot[data-mood="sleepy"] .qc-bot-zzz i:nth-child(1) { animation-delay: 0s; }
   .qc-bot[data-mood="sleepy"] .qc-bot-zzz i:nth-child(2) { animation-delay: .45s; }
   .qc-bot[data-mood="sleepy"] .qc-bot-zzz i:nth-child(3) { animation-delay: .9s; }
+  /* 睡到结网时：网占了右上角，zzz 滑到左上，不然两撮线条糊成一团 */
+  .qc-bot[data-web="1"][data-mood="sleepy"] .qc-bot-zzz { transform: translate(-34px, -11px); }
 
   .qc-bot-tick {
     position: absolute; inset: 0; margin: auto;
@@ -632,7 +634,8 @@
   const PET_STROKES = 4;       // 窗口内来回这么多次算摸头
   const PET_IDLE_MS = 1100;    // 停下这么久就结束摸头
   const SWEEP_WINDOW = 1500;   // 镜像扫视的判定窗口
-  const WEB_AFTER = 82000;     // 多久没人理它就结网
+  const WEB_AFTER = 90000;     // 多久没人理它就结网（比睡着晚 40 秒，睡着也照样结）
+  const WEB_RETRY = 8000;      // 时间到了但有表情/在忙，过这么久再看一眼
 
   /* 待机时随机换的表情（权重加起来 0.52，剩下 48% 就是单纯眨个眼） */
   const IDLE_MOODS = [
@@ -692,6 +695,7 @@
   let sweepSamples = [];
   let sweepUntil = 0;
   let webOn = false;
+  let webRetry = WEB_RETRY;
   let lastPetSay = 0;
 
   function ensureStyle(shadow) {
@@ -799,6 +803,8 @@
     setMood('surprised', 450);
     say(L('wake', '！'), 700, false);
     startIdle();
+    // 睡到结网被吵醒：先「！」一下，再把网抖掉
+    if (webOn) setTimeout(() => { if (el && webOn) clearWeb(); }, 700);
   }
 
   function tick() {
@@ -994,15 +1000,20 @@
   }
 
   /* ---------- 结网：很久没人理，身上结一层蜘蛛网，一碰就散 ---------- */
-  function scheduleWeb() {
+  /* 睡着也算「没人理」——它睡到长网，比醒着长网更像那回事 */
+  function scheduleWeb(delay) {
     if (webTimer) { clearTimeout(webTimer); webTimer = null; }
     if (prefersReduced()) return;
     webTimer = setTimeout(() => {
       webTimer = null;
-      if (!el || drag || el.dataset.state !== 'idle') return;
-      if (el.dataset.mood) return;
+      if (!el) return;
+      // 正在干活（解题、滚球、被拖）就先放过，过会儿再看
+      if (drag || el.dataset.state !== 'idle') { scheduleWeb(webRetry); return; }
+      // 有表情：困、打哈欠、开心这些都会挡网，等它做完再来，别一枪打空就再也不管
+      const mood = el.dataset.mood;
+      if (mood && mood !== 'sleepy') { scheduleWeb(webRetry); return; }
       growWeb();
-    }, WEB_AFTER);
+    }, delay == null ? WEB_AFTER : delay);
   }
 
   /* 长网（也留给预览页/测试手动触发） */
@@ -1010,7 +1021,8 @@
     if (!el) return;
     webOn = true;
     el.dataset.web = '1';
-    if (!quiet) say(L('web', '都长蜘蛛网了'), 4200, false);
+    // 睡着的时候不出声：睡梦里报「都长蜘蛛网了」很奇怪，等醒了再说
+    if (!quiet && el.dataset.mood !== 'sleepy') say(L('web', '都长蜘蛛网了'), 4200, false);
   }
 
   function clearWeb() {
@@ -1022,6 +1034,7 @@
     setTimeout(() => {
       if (el && el.dataset.web === 'clear') delete el.dataset.web;
     }, 540);
+    scheduleWeb();   // 抖掉之后重新数：再没人理，过一会儿还会结
   }
 
   /* ---------- 镜像扫视：你在它面前快速左右晃鼠标，它跟着扫，然后自己晕了 ---------- */
@@ -1674,5 +1687,5 @@
     return SKINS[(i + 1) % SKINS.length];
   }
 
-  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, rollTo, rollHome, growWeb, clearWeb, wanderOnce: wander, setSkin, nextSkin, getEl: () => el, CSS, SKINS };
+  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, rollTo, rollHome, growWeb, clearWeb, armWeb: scheduleWeb, setWebRetry: (ms) => { webRetry = Math.max(20, Number(ms) || WEB_RETRY); }, webAfter: () => WEB_AFTER, wanderOnce: wander, setSkin, nextSkin, getEl: () => el, CSS, SKINS };
 })();

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>小机器人 · v1.16.0</title>
+<title>小机器人 · v1.16.1</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -40,7 +40,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>小机器人<span class="v">v1.16.0</span></h1>
+  <h1>小机器人<span class="v">v1.16.1</span></h1>
   <div class="sub">
     <b>现在能拖着走了。</b>按住右下角那个，拖到哪儿它就待在哪儿，下次打开还在那儿。<br>
     表情只靠眼睛变：开心眯成半圆、委屈时外眼角垂下来、不高兴反过来，睡着飘 zzz；被甩晕了是螺旋眼，松手后靠惯性再转一会儿，然后闭眼 ><，<b>左右晃的幅度一下比一下小，停住一下才恢复</b>。<br>
@@ -63,6 +63,7 @@
     <button data-do="yawn">打哈欠</button>
     <button data-do="tilt">歪头</button>
     <button data-do="web">蜘蛛网</button>
+    <button data-do="sleepweb">睡觉+网</button>
     <button data-do="webclear">清掉网</button>
     <button data-do="skin">换皮肤</button>
     <button data-do="pomo">番茄钟</button>
@@ -492,7 +493,7 @@ window.__QC = {
 
   /* 结网：很久没人理，右上角结一张蜘蛛网，网上挂只小蜘蛛 */
   .qc-bot-web {
-    position: absolute; right: -4px; top: -3px;
+    position: absolute; right: -5px; top: -7px;
     width: 30px; height: 30px;
     opacity: 0; pointer-events: none;
     transform-origin: 100% 0;
@@ -569,7 +570,7 @@ window.__QC = {
     position: absolute; right: -14px; top: -16px;
     width: 26px; height: 28px;
     opacity: 0; pointer-events: none;
-    transition: opacity .25s;
+    transition: opacity .25s, transform .38s cubic-bezier(.34,1.15,.64,1);
   }
   .qc-bot[data-mood="sleepy"] .qc-bot-zzz { opacity: 1; }
   .qc-bot-zzz i {
@@ -585,6 +586,8 @@ window.__QC = {
   .qc-bot[data-mood="sleepy"] .qc-bot-zzz i:nth-child(1) { animation-delay: 0s; }
   .qc-bot[data-mood="sleepy"] .qc-bot-zzz i:nth-child(2) { animation-delay: .45s; }
   .qc-bot[data-mood="sleepy"] .qc-bot-zzz i:nth-child(3) { animation-delay: .9s; }
+  /* 睡到结网时：网占了右上角，zzz 滑到左上，不然两撮线条糊成一团 */
+  .qc-bot[data-web="1"][data-mood="sleepy"] .qc-bot-zzz { transform: translate(-34px, -11px); }
 
   .qc-bot-tick {
     position: absolute; inset: 0; margin: auto;
@@ -925,7 +928,8 @@ window.__QC = {
   const PET_STROKES = 4;       // 窗口内来回这么多次算摸头
   const PET_IDLE_MS = 1100;    // 停下这么久就结束摸头
   const SWEEP_WINDOW = 1500;   // 镜像扫视的判定窗口
-  const WEB_AFTER = 82000;     // 多久没人理它就结网
+  const WEB_AFTER = 90000;     // 多久没人理它就结网（比睡着晚 40 秒，睡着也照样结）
+  const WEB_RETRY = 8000;      // 时间到了但有表情/在忙，过这么久再看一眼
 
   /* 待机时随机换的表情（权重加起来 0.52，剩下 48% 就是单纯眨个眼） */
   const IDLE_MOODS = [
@@ -985,6 +989,7 @@ window.__QC = {
   let sweepSamples = [];
   let sweepUntil = 0;
   let webOn = false;
+  let webRetry = WEB_RETRY;
   let lastPetSay = 0;
 
   function ensureStyle(shadow) {
@@ -1092,6 +1097,8 @@ window.__QC = {
     setMood('surprised', 450);
     say(L('wake', '！'), 700, false);
     startIdle();
+    // 睡到结网被吵醒：先「！」一下，再把网抖掉
+    if (webOn) setTimeout(() => { if (el && webOn) clearWeb(); }, 700);
   }
 
   function tick() {
@@ -1287,15 +1294,20 @@ window.__QC = {
   }
 
   /* ---------- 结网：很久没人理，身上结一层蜘蛛网，一碰就散 ---------- */
-  function scheduleWeb() {
+  /* 睡着也算「没人理」——它睡到长网，比醒着长网更像那回事 */
+  function scheduleWeb(delay) {
     if (webTimer) { clearTimeout(webTimer); webTimer = null; }
     if (prefersReduced()) return;
     webTimer = setTimeout(() => {
       webTimer = null;
-      if (!el || drag || el.dataset.state !== 'idle') return;
-      if (el.dataset.mood) return;
+      if (!el) return;
+      // 正在干活（解题、滚球、被拖）就先放过，过会儿再看
+      if (drag || el.dataset.state !== 'idle') { scheduleWeb(webRetry); return; }
+      // 有表情：困、打哈欠、开心这些都会挡网，等它做完再来，别一枪打空就再也不管
+      const mood = el.dataset.mood;
+      if (mood && mood !== 'sleepy') { scheduleWeb(webRetry); return; }
       growWeb();
-    }, WEB_AFTER);
+    }, delay == null ? WEB_AFTER : delay);
   }
 
   /* 长网（也留给预览页/测试手动触发） */
@@ -1303,7 +1315,8 @@ window.__QC = {
     if (!el) return;
     webOn = true;
     el.dataset.web = '1';
-    if (!quiet) say(L('web', '都长蜘蛛网了'), 4200, false);
+    // 睡着的时候不出声：睡梦里报「都长蜘蛛网了」很奇怪，等醒了再说
+    if (!quiet && el.dataset.mood !== 'sleepy') say(L('web', '都长蜘蛛网了'), 4200, false);
   }
 
   function clearWeb() {
@@ -1315,6 +1328,7 @@ window.__QC = {
     setTimeout(() => {
       if (el && el.dataset.web === 'clear') delete el.dataset.web;
     }, 540);
+    scheduleWeb();   // 抖掉之后重新数：再没人理，过一会儿还会结
   }
 
   /* ---------- 镜像扫视：你在它面前快速左右晃鼠标，它跟着扫，然后自己晕了 ---------- */
@@ -1967,7 +1981,7 @@ window.__QC = {
     return SKINS[(i + 1) % SKINS.length];
   }
 
-  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, rollTo, rollHome, growWeb, clearWeb, wanderOnce: wander, setSkin, nextSkin, getEl: () => el, CSS, SKINS };
+  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, rollTo, rollHome, growWeb, clearWeb, armWeb: scheduleWeb, setWebRetry: (ms) => { webRetry = Math.max(20, Number(ms) || WEB_RETRY); }, webAfter: () => WEB_AFTER, wanderOnce: wander, setSkin, nextSkin, getEl: () => el, CSS, SKINS };
 })();
 
 </script>
@@ -1975,7 +1989,7 @@ window.__QC = {
 (function () {
   var M = window.__QC.mascot;
   var BOT = "<span class=\"qc-bot-body\"><span class=\"qc-bot-antenna\"></span><span class=\"qc-bot-head\"><span class=\"qc-bot-eyes\"><span class=\"qc-bot-eye\"></span><span class=\"qc-bot-eye\"></span></span><span class=\"qc-bot-blush\"><i></i><i></i></span><span class=\"qc-bot-spiral\"><svg viewBox=\"0 0 10 10\"><path d=\"M5.0 4.6L5.2 4.5L5.4 4.5L5.6 4.7L5.8 4.9L5.9 5.2L5.8 5.6L5.6 5.9L5.3 6.2L4.8 6.3L4.3 6.3L3.8 6.0L3.4 5.6L3.2 5.0L3.3 4.3L3.5 3.7L4.1 3.1L4.8 2.8L5.6 2.8L6.4 3.1L7.1 3.6L7.6 4.4L7.7 5.4L7.5 6.4L6.9 7.2L6.0 7.9L4.9 8.1L3.7 8.0L2.7 7.4L1.9 6.5L1.5 5.3L1.5 4.0L2.0 2.7L2.9 1.7L4.2 1.1L5.7 1.0L7.1 1.4L8.3 2.3L9.2 3.6\"/></svg><svg viewBox=\"0 0 10 10\"><path d=\"M5.0 4.6L5.2 4.5L5.4 4.5L5.6 4.7L5.8 4.9L5.9 5.2L5.8 5.6L5.6 5.9L5.3 6.2L4.8 6.3L4.3 6.3L3.8 6.0L3.4 5.6L3.2 5.0L3.3 4.3L3.5 3.7L4.1 3.1L4.8 2.8L5.6 2.8L6.4 3.1L7.1 3.6L7.6 4.4L7.7 5.4L7.5 6.4L6.9 7.2L6.0 7.9L4.9 8.1L3.7 8.0L2.7 7.4L1.9 6.5L1.5 5.3L1.5 4.0L2.0 2.7L2.9 1.7L4.2 1.1L5.7 1.0L7.1 1.4L8.3 2.3L9.2 3.6\"/></svg></span><span class=\"qc-bot-zzz\"><i>z</i><i>z</i><i>z</i></span><span class=\"qc-bot-hearts\"><i class=\"qc-bot-heart\"></i><i class=\"qc-bot-heart\"></i><i class=\"qc-bot-heart\"></i></span><span class=\"qc-bot-web\"><svg viewBox=\"0 0 24 24\"><path d=\"M24 0L1 0M24 0L2.8 8.8M24 0L7.7 16.3M24 0L15.2 21.2M24 0L24 23M17 0Q18.6 1.1 17.5 2.7M17.5 2.7Q19.4 3.1 19.1 4.9M19.1 4.9Q20.9 4.6 21.3 6.5M21.3 6.5Q22.9 5.4 24 7M11 0Q14 2 12 5M12 5Q15.5 5.7 14.8 9.2M14.8 9.2Q18.3 8.5 19 12M19 12Q22 10 24 13M5 0Q9.4 2.9 6.4 7.3M6.4 7.3Q11.6 8.3 10.6 13.4M10.6 13.4Q15.7 12.4 16.7 17.6M16.7 17.6Q21.1 14.6 24 19\"/><g transform=\"translate(16.6 9.4)\"><g class=\"qc-web-spider\"><circle r=\"1.9\" fill=\"#1b202a\" stroke=\"rgba(236,242,252,.7)\" stroke-width=\".45\"/><circle cy=\"-2.2\" r=\"1.15\" fill=\"#1b202a\" stroke=\"rgba(236,242,252,.7)\" stroke-width=\".45\"/><path d=\"M-1.2 -.3L-3 -1.6M-1.4 .3L-3.2 .9M-1 1.1L-2.7 2.5M1.2 -.3L3 -1.6M1.4 .3L3.2 .9M1 1.1L2.7 2.5\"/></g></g></svg></span><svg class=\"qc-bot-tick\" viewBox=\"0 0 24 24\"><path d=\"M5.5 12.5 L10 17 L18.5 7.5\"/></svg></span></span><span class=\"qc-pomo\"><span class=\"qc-pomo-t\"></span><span class=\"qc-pomo-bar\"><i></i></span></span><span class=\"qc-bot-bubble\"><span class=\"qc-bot-bubble-txt\"></span></span>";
-  var CARDS = [{"mood":"","state":"idle","t":"待机","d":"眨眼、左右张望、甩头"},{"mood":"happy","state":"idle","t":"开心","d":"眼睛眯成两道弯"},{"mood":"wink","state":"idle","t":"卖萌","d":"一只眼眯起来"},{"mood":"sad","state":"idle","t":"委屈","d":"眼睛放大，外眼角垂下来"},{"mood":"angry","state":"idle","t":"不高兴","d":"内眼角压下来"},{"mood":"surprised","state":"idle","t":"惊讶","d":"眼睛瞪圆"},{"mood":"pet","state":"idle","t":"被摸头","d":"月牙眼 + 脸红 + 冒爱心"},{"mood":"yawn","state":"idle","t":"打哈欠","d":"快睡着前的过渡"},{"mood":"dizzy","state":"idle","t":"晕乎乎","d":"甩太快或画圈就会"},{"mood":"daze","state":"idle","t":"晕完闭眼","d":"眼睛 ><，摇晃幅度递减后停住"},{"mood":"sleepy","state":"idle","t":"打瞌睡","d":"细眼 + 头上飘 zzz"},{"mood":"","state":"idle","t":"好奇歪头","d":"悬停 1.7 秒没人点就歪头","attrs":"data-tilt=\"1\""},{"mood":"","state":"idle","t":"结蜘蛛网","d":"很久没人理，右上角结网 + 小蜘蛛","attrs":"data-web=\"1\""},{"mood":"","state":"thinking","t":"解题中","d":"眼睛来回扫、天线闪"},{"mood":"","state":"done","t":"全部填好","d":"变绿 + 对勾"},{"mood":"","state":"error","t":"出错","d":"变红 + 委屈脸 + 抖一下"}];
+  var CARDS = [{"mood":"","state":"idle","t":"待机","d":"眨眼、左右张望、甩头"},{"mood":"happy","state":"idle","t":"开心","d":"眼睛眯成两道弯"},{"mood":"wink","state":"idle","t":"卖萌","d":"一只眼眯起来"},{"mood":"sad","state":"idle","t":"委屈","d":"眼睛放大，外眼角垂下来"},{"mood":"angry","state":"idle","t":"不高兴","d":"内眼角压下来"},{"mood":"surprised","state":"idle","t":"惊讶","d":"眼睛瞪圆"},{"mood":"pet","state":"idle","t":"被摸头","d":"月牙眼 + 脸红 + 冒爱心"},{"mood":"yawn","state":"idle","t":"打哈欠","d":"快睡着前的过渡"},{"mood":"dizzy","state":"idle","t":"晕乎乎","d":"甩太快或画圈就会"},{"mood":"daze","state":"idle","t":"晕完闭眼","d":"眼睛 ><，摇晃幅度递减后停住"},{"mood":"sleepy","state":"idle","t":"打瞌睡","d":"细眼 + 头上飘 zzz"},{"mood":"","state":"idle","t":"好奇歪头","d":"悬停 1.7 秒没人点就歪头","attrs":"data-tilt=\"1\""},{"mood":"","state":"idle","t":"结蜘蛛网","d":"醒着也能结，一碰就散","attrs":"data-web=\"1\""},{"mood":"sleepy","state":"idle","t":"睡到长网","d":"睡着也结网，zzz 让到左上","attrs":"data-web=\"1\""},{"mood":"","state":"thinking","t":"解题中","d":"眼睛来回扫、天线闪"},{"mood":"","state":"done","t":"全部填好","d":"变绿 + 对勾"},{"mood":"","state":"error","t":"出错","d":"变红 + 委屈脸 + 抖一下"}];
 
   var grid = document.getElementById('grid');
   CARDS.forEach(function (c) {
@@ -2038,6 +2052,7 @@ window.__QC = {
       if (k === 'yawn') { M.setState('idle'); M.setMood('yawn', 2600); M.say('', 0, false); }
       if (k === 'tilt') { M.setState('idle'); M.say('', 0, false); M.getEl().dataset.tilt = '1'; }
       if (k === 'web') { M.setState('idle'); M.growWeb(); }
+      if (k === 'sleepweb') { M.setState('idle'); M.setMood('sleepy', 0); M.growWeb(true); }
       if (k === 'webclear') { M.clearWeb(); }
       if (k === 'skin') { M.setSkin(M.nextSkin()); }
       if (k === 'pomo') {
