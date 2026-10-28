@@ -429,38 +429,95 @@
     return '';
   }
 
+  /* 工具栏 / 编辑器外壳的类名，读题面时要跳过 */
+  const TOOLBAR_RE = /(toolbar|edui|wysiwyg|wysi|ql-tool|cke_tool|mce-toolbar|tox-toolbar|editor-tool|simditor)/i;
+
+  function textOfNode(n) {
+    if (!n) return '';
+    if (n.nodeType === 3) return n.nodeValue || '';
+    if (n.nodeType !== 1) return '';
+    if (/^(SCRIPT|STYLE|BUTTON|SELECT|TEXTAREA|INPUT|IFRAME|SVG|NOSCRIPT)$/.test(n.tagName)) return '';
+    const cls = (typeof n.className === 'string' ? n.className : '') + ' ' + (n.id || '');
+    if (TOOLBAR_RE.test(cls)) return '';
+    try {
+      return n.innerText || n.textContent || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  /* 学习通 / UEditor：题目块和编辑器是兄弟，题面在编辑器前面，往上找最近的一段文字 */
+  function questionTextBefore(anchor, max) {
+    const NL = String.fromCharCode(10);
+    let acc = '';
+    let node = anchor;
+    for (let i = 0; i < 8 && node; i++) {
+      let sib = node.previousSibling;
+      let guard = 0;
+      while (sib && guard++ < 60) {
+        const t = textOfNode(sib);
+        if (t && t.trim()) acc = t + NL + acc;
+        if (acc.length > max * 2) break;
+        sib = sib.previousSibling;
+      }
+      if (acc.trim()) {
+        const text = acc.replace(/\s+/g, ' ').trim().slice(-max);
+        return { text: text, node: node };
+      }
+      node = node.parentElement;
+      if (!node || node === (node.ownerDocument || document).body) break;
+    }
+    return { text: '', node: null };
+  }
+
+  /* 题面：先按「编辑器和题目同容器」，不行再按「题面在编辑器前面」 */
+  function essayStem(anchor) {
+    // 先看编辑器紧挨着的上文：几乎所有平台都是「题目块 → 工具栏 → 编辑器」
+    const before = questionTextBefore(anchor, 900);
+    const s2 = String(before.text || '').replace(/\s+/g, ' ').trim();
+    if (s2.length >= 12 && ESSAY_HINT.test(s2)) {
+      return { stem: s2, root: before.node || anchor };
+    }
+
+    // 再看「题目和编辑器在同一个容器里」的情况，容器别超过一屏文字，免得抓到整页
+    let container = null;
+    try {
+      container = blankContainer(anchor);
+    } catch (e) {}
+    if (container) {
+      let s = '';
+      try {
+        s = stemWithBlanks(container, [anchor]);
+      } catch (e) {}
+      s = String(s || '').replace(/\s*_{2,}\s*/g, ' ').replace(/\s+/g, ' ').trim();
+      if (s.length >= 12 && s.length <= 700 && ESSAY_HINT.test(s)) {
+        return { stem: s, root: container };
+      }
+    }
+    return null;
+  }
+
   function extractEssays() {
     const out = [];
     const used = new Set();
     for (const el of essayCandidates()) {
       const anchor = editorAnchor(el) || el;
-      let container = null;
-      try {
-        container = blankContainer(anchor);
-      } catch (e) {
-        continue;
-      }
-      if (!container || used.has(container)) continue;
-      if (!isVisible(container)) continue;
+      const hit = essayStem(anchor);
+      if (!hit) continue;
+      if (used.has(hit.root)) continue;
+      if (hit.root && !isVisible(hit.root)) continue;
 
-      let stem = stemWithBlanks(container, [anchor]);
-      if (!stem) continue;
-      // 论述题不需要「____」占位，去掉看着更干净
-      stem = stem.replace(/\s*_{2,}\s*/g, ' ').replace(/\s+/g, ' ').trim();
-      if (stem.length < 12) continue;
-      if (!ESSAY_HINT.test(stem)) continue;
-
-      used.add(container);
+      used.add(hit.root);
       ESSAY_ELS.add(el);
       out.push({
         source: 'blank',
         type: 'essay',
         essay: true,
-        stem,
-        wordHint: essayWordHint(stem),
+        stem: hit.stem,
+        wordHint: essayWordHint(hit.stem),
         options: [],
         blanks: [{ el, anchor }],
-        root: container
+        root: hit.root
       });
     }
     return out;
@@ -549,5 +606,5 @@
     return essays.concat(out);
   }
 
-  Object.assign(Q, { NOT_QUIZ_SIG, NOT_QUIZ_CN, ANSWER_LABEL, PERSONAL_ID, checkFillable, isQuizFillable, nearbyLabelText, collectCandidates, looksLikeQuestion, blankContainer, stemWithBlanks, groupTable, matrixInfo, stemWithoutTables, tableContainer, extractBlanks, extractEssays, essayCandidates, essayWordHint, editorLike, ESSAY_HINT });
+  Object.assign(Q, { NOT_QUIZ_SIG, NOT_QUIZ_CN, ANSWER_LABEL, PERSONAL_ID, checkFillable, isQuizFillable, nearbyLabelText, collectCandidates, looksLikeQuestion, blankContainer, stemWithBlanks, groupTable, matrixInfo, stemWithoutTables, tableContainer, extractBlanks, extractEssays, essayCandidates, essayWordHint, essayStem, questionTextBefore, editorLike, ESSAY_HINT });
 })();

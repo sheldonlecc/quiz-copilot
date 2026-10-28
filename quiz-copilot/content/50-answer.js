@@ -164,6 +164,23 @@
 
     setEssayValue(el, text);
 
+    // UEditor 这类编辑器：真正提交的是它藏起来的 textarea，顺手也写一份
+    if (isRichEdit(el, el.ownerDocument || document)) {
+      try {
+        const doc = el.ownerDocument || document;
+        const frame = doc.defaultView && doc.defaultView.frameElement;
+        let box = frame && frame.parentElement;
+        let ta = null;
+        for (let i = 0; i < 4 && box && !ta; i++, box = box.parentElement) {
+          ta = box.querySelector('textarea');
+        }
+        if (ta && !ta.disabled) {
+          const cur = String(ta.value || '');
+          if (cur.length < text.length) setNativeValue(ta, text);
+        }
+      } catch (e) {}
+    }
+
     const got = readEssay(el).replace(/\s+/g, '');
     const want = text.replace(/\s+/g, '');
     if (!got) return '编辑器没接受写入，点「复制全文」手动粘贴';
