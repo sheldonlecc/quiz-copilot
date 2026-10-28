@@ -29,7 +29,7 @@
     display: flex; flex-direction: column; align-items: center;
     transform-origin: 50% 100%;
     animation: qc-bot-tilt 13s ease-in-out infinite;
-    transition: transform .16s ease, width .2s ease, height .2s ease,
+    transition: transform .16s ease, opacity .16s ease, width .2s ease, height .2s ease,
                 border-radius .2s ease, background .2s ease, box-shadow .2s ease;
   }
   .qc-bot-antenna {
@@ -401,37 +401,41 @@
 
   /* ---------- 化成球滚过去 ---------- */
   .qc-bot[data-form="ball"] { cursor: default; }
+
+  /* 机器人整体缩小淡出——不做宽高变形，否则中途会露出方角 */
   .qc-bot[data-form="ball"] .qc-bot-body {
-    position: relative;
-    width: 34px; height: 34px;
-    border-radius: 50%;
+    opacity: 0;
+    transform: scale(.35);
+    animation: none;
+    transition: opacity .16s ease, transform .2s cubic-bezier(.3,1.2,.5,1);
+  }
+  .qc-bot[data-form="ball"] .qc-bot-tick,
+  .qc-bot[data-form="ball"] .qc-bot-bubble,
+  .qc-bot[data-form="ball"] .qc-pomo { opacity: 0 !important; }
+
+  /* 球是单独一层，本来就是圆的，只做缩放，形状不会变 */
+  .qc-ball {
+    position: absolute; left: 50%; top: 50%;
+    width: 34px; height: 34px; margin: -17px 0 0 -17px;
+    opacity: 0; transform: scale(.3);
+    transition: opacity .16s ease, transform .2s cubic-bezier(.3,1.35,.5,1);
+    pointer-events: none; z-index: 1;
+  }
+  .qc-bot[data-form="ball"] .qc-ball { opacity: 1; transform: scale(1); }
+  .qc-ball i {
+    display: block; width: 100%; height: 100%; border-radius: 50%;
     background: radial-gradient(circle at 34% 28%, #b3cdff 0%, #4f8cff 48%, #2749c4 100%);
     box-shadow: 0 5px 14px rgba(40,80,200,.55), inset 0 -3px 6px rgba(0,0,0,.3);
-    animation: none;
-    transform-origin: 50% 50%;
-    overflow: hidden;
-    /* 这里不能给 transform 加过渡，滚动是逐帧算的，加了会拖尾 */
-    transition: width .2s ease, height .2s ease, border-radius .2s ease,
-                background .2s ease, box-shadow .2s ease;
+    position: relative;
     transform: rotate(var(--qc-roll, 0rad));
   }
   /* 球上的一点高光，转起来才看得出在滚 */
-  .qc-bot[data-form="ball"] .qc-bot-body::after {
+  .qc-ball i::after {
     content: ''; position: absolute; left: 50%; top: 5px;
     width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%;
     background: rgba(255,255,255,.85);
     box-shadow: 0 0 6px rgba(255,255,255,.6);
   }
-  /* 头和天线一边缩小一边淡出，看着像「塌」进球里 */
-  .qc-bot[data-form="ball"] .qc-bot-head,
-  .qc-bot[data-form="ball"] .qc-bot-antenna {
-    opacity: 0;
-    transform: scale(.35);
-    transition: opacity .14s ease, transform .2s ease;
-  }
-  .qc-bot[data-form="ball"] .qc-bot-tick,
-  .qc-bot[data-form="ball"] .qc-bot-bubble,
-  .qc-bot[data-form="ball"] .qc-pomo { opacity: 0 !important; }
 
   @keyframes qc-bot-breathe { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.04) } }
   @keyframes qc-bot-blink { 0%, 93%, 100% { transform: scaleY(1) } 96% { transform: scaleY(.1) } }
@@ -606,6 +610,8 @@
     angry: 300,
     surprised: 300
   };
+
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
   let el = null;
   let bubbleTimer = null;
@@ -1068,6 +1074,7 @@
 
     el.dataset.form = 'ball';
     el.dataset.busy = '1';
+    await wait(230);          // 先化形成球，站稳了再起步
 
     await rollToXY(tx, ty);
 
@@ -1090,6 +1097,7 @@
     rolling = true;
     el.dataset.form = 'ball';
     el.dataset.busy = '1';
+    await wait(230);
     await rollToXY(o.left, o.top);
     if (el) {
       delete el.dataset.form;
@@ -1361,6 +1369,7 @@
       '<span class="qc-bot-motes"><i></i><i></i><i></i><i></i><i></i></span>' +
       '<svg class="qc-bot-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5 L10 17 L18.5 7.5"/></svg>' +
       '</span></span>' +
+      '<span class="qc-ball"><i></i></span>' +
       '<span class="qc-pomo"><span class="qc-pomo-t"></span><span class="qc-pomo-bar"><i></i></span></span>' +
       '<span class="qc-bot-bubble"><span class="qc-bot-bubble-txt"></span></span>';
 

@@ -20,6 +20,70 @@
     S.shadow = shadow;
   }
 
+
+  const clampNum = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  /* ---------- 浮窗拖动：拖标题栏移动，位置记在本地 ---------- */
+  function makeDraggable(box, handle, key) {
+    if (!box || !handle || handle.dataset.dragBound === '1') return;
+    handle.dataset.dragBound = '1';
+    handle.style.cursor = 'grab';
+    handle.style.touchAction = 'none';
+
+    let drag = null;
+
+    handle.addEventListener('pointerdown', (e) => {
+      if (e.button != null && e.button !== 0) return;
+      if (e.target.closest && e.target.closest('button, a, input, select')) return;
+      const r = box.getBoundingClientRect();
+      drag = { id: e.pointerId, ox: e.clientX - r.left, oy: e.clientY - r.top };
+      box.style.right = 'auto';
+      box.style.left = r.left + 'px';
+      box.style.top = r.top + 'px';
+      box.dataset.dragging = '1';
+      try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+      e.preventDefault();
+    });
+
+    handle.addEventListener('pointermove', (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const w = box.offsetWidth;
+      const h = box.offsetHeight;
+      box.style.left = clampNum(e.clientX - drag.ox, 0, Math.max(0, window.innerWidth - w)) + 'px';
+      box.style.top = clampNum(e.clientY - drag.oy, 0, Math.max(0, window.innerHeight - Math.min(h, 80))) + 'px';
+    });
+
+    const end = (e) => {
+      if (!drag) return;
+      drag = null;
+      delete box.dataset.dragging;
+      try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
+      if (!key) return;
+      const r = box.getBoundingClientRect();
+      try {
+        chrome.storage.local.set({ [key]: { left: Math.round(r.left), top: Math.round(r.top) } });
+      } catch (err) {}
+    };
+    handle.addEventListener('pointerup', end);
+    handle.addEventListener('pointercancel', end);
+  }
+
+  function applySavedPos(box, key) {
+    if (!box || !key) return;
+    try {
+      chrome.storage.local.get({ [key]: null }, (v) => {
+        const p = v && v[key];
+        if (!p || typeof p.left !== 'number' || typeof p.top !== 'number') return;
+        if (!box.isConnected) return;
+        const w = box.offsetWidth || 400;
+        const h = box.offsetHeight || 320;
+        box.style.right = 'auto';
+        box.style.left = clampNum(p.left, 0, Math.max(0, window.innerWidth - w)) + 'px';
+        box.style.top = clampNum(p.top, 0, Math.max(0, window.innerHeight - Math.min(h, 80))) + 'px';
+      });
+    } catch (e) {}
+  }
+
   function openPanel() {
     ensureHost();
     // 右上角只放一个窗口：开面板就收起番茄窗
@@ -35,6 +99,7 @@
     S.shadow.appendChild(wrap);
     S.panelEl = wrap;
     render();
+    applySavedPos(wrap, 'qcPanelPos');
   }
 
   function closePanel() {
@@ -209,6 +274,9 @@
       btn.addEventListener('click', onAct);
     });
 
+    const headEl = S.panelEl.querySelector('.qc-head');
+    if (headEl) makeDraggable(S.panelEl, headEl, 'qcPanelPos');
+
     const newList = S.panelEl.querySelector('.qc-list');
     if (newList && oldScroll) newList.scrollTop = oldScroll;
   }
@@ -335,5 +403,5 @@
   }
 
 
-  Object.assign(Q, { ensureHost, openPanel, closePanel, togglePanel, setStatus, render, onAct, copyAll, copyText, fallbackCopy });
+  Object.assign(Q, { ensureHost, openPanel, closePanel, togglePanel, setStatus, render, onAct, copyAll, copyText, fallbackCopy, makeDraggable, applySavedPos });
 })();

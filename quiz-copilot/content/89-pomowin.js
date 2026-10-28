@@ -33,6 +33,7 @@
   }
   .qc-pw-hd {
     display: flex; align-items: center; gap: 8px;
+    cursor: grab;
     padding: 11px 12px 9px;
     border-bottom: 1px solid rgba(255,255,255,.07);
     flex: 0 0 auto;
@@ -55,6 +56,7 @@
   .qc-pw-tab:hover { color: #cfd6e2; background: rgba(255,255,255,.04); }
   .qc-pw-tab.on { color: #9dc0ff; border-bottom-color: #4f8cff; font-weight: 600; }
 
+  .qc-pw[data-dragging="1"] { user-select: none; }
   .qc-pw-body { padding: 12px 14px 14px; overflow: auto; flex: 1 1 auto; }
 
   /* ---- 专注 ---- */
@@ -222,6 +224,7 @@
     S.shadow.appendChild(el);
     win = el;
     refresh();
+    if (Q.applySavedPos) Q.applySavedPos(win, 'qcPomoPos');
 
     if (ticker) clearInterval(ticker);
     ticker = setInterval(() => {
@@ -442,6 +445,11 @@
     const mins = Number(S.pomoCustom) || 25;
     win.dataset.mins = String(mins);
     bind();
+
+    if (Q.makeDraggable) {
+      const hd = win.querySelector('.qc-pw-hd');
+      if (hd) Q.makeDraggable(win, hd, 'qcPomoPos');
+    }
   }
 
   function setMins(v) {
