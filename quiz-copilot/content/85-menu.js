@@ -184,6 +184,7 @@
         pomo && pomo.running ? `${pomo.label} ${pomo.left}` : '打开'
       )
     );
+    parts.push(row('wardrobe', '衣橱', '帽子 / 耳朵 / 领结'));
     parts.push(row('options', '更多设置', '皮肤 / 划词…'));
     parts.push(row('hide', '隐藏小机器人', '', { danger: true }));
 
@@ -332,6 +333,11 @@
       return false;
     }
 
+    if (act === 'wardrobe') {
+      if (Q.wardrobe) Q.wardrobe.open();
+      return false;
+    }
+
     if (act === 'options') {
       try {
         chrome.runtime.sendMessage({ type: 'QC_OPTIONS' });
@@ -343,6 +349,7 @@
       try { chrome.storage.sync.set({ showFab: false }); } catch (e) {}
       if (Q.closePanel) Q.closePanel();
       if (Q.pomoWin) Q.pomoWin.close();
+      if (Q.wardrobe) Q.wardrobe.close();
       return false;
     }
 

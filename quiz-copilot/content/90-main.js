@@ -187,7 +187,7 @@
   function boot() {
     try {
       chrome.storage.sync.get(
-        { autoFill: true, showFab: true, botSkin: 'blue', selExplain: true, autoPage: false, pageLimit: 30, pomoCustom: 25, chatLevel: 2 },
+        { autoFill: true, showFab: true, botSkin: 'blue', selExplain: true, autoPage: false, pageLimit: 30, pomoCustom: 25, chatLevel: 2, botWear: null },
         (cfg) => {
         S.autoFill = !!cfg.autoFill;
         S.autoPage = !!cfg.autoPage;
@@ -199,6 +199,8 @@
         S.showFab = cfg.showFab !== false;
         S.selExplain = cfg.selExplain !== false;
         S.skin = cfg.botSkin || 'blue';
+        // 换装要在 mount 之前塞进 S，mount 时会照着它把 data-* 写上去
+        if (cfg.botWear && typeof cfg.botWear === 'object') S.botWear = cfg.botWear;
         if (Q.mascot) {
           Q.mascot.mount();
           if (Q.mascot.setSkin) Q.mascot.setSkin(S.skin);

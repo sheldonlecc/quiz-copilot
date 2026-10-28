@@ -35,6 +35,8 @@
   .qc-bot-antenna {
     position: relative; width: 2px; height: 7px; border-radius: 1px;
     background: rgba(255,255,255,.5); margin-bottom: -1px;
+    transform-origin: 50% 100%;
+    transition: transform .18s ease, opacity .2s ease;
   }
   .qc-bot-antenna::after {
     content: ''; position: absolute; left: 50%; top: -4px;
@@ -566,6 +568,52 @@
   .qc-bot[data-state="error"] .qc-bot-antenna::after { background: #ffb3b3; box-shadow: 0 0 7px rgba(255,120,120,.8); }
   .qc-bot[data-state="error"] .qc-bot-body { animation: qc-bot-shake .42s ease-in-out; }
 
+  /* ---------- 换装配件 ---------- */
+  .qc-bot-hat, .qc-bot-ears, .qc-bot-neck { position: absolute; pointer-events: none; }
+  /* 帽子和耳朵挂在脑袋顶部；领结挂在下巴，故意露一半在外面 */
+  .qc-bot-hat, .qc-bot-ears { left: 0; top: 0; width: 38px; height: 0; }
+  .qc-bot-neck { left: 50%; margin-left: -15px; bottom: -5px; width: 30px; height: 13px; }
+
+  .qc-bot-hat > i, .qc-bot-ears > i, .qc-bot-neck > i {
+    position: absolute; display: block;
+    opacity: 0; transform: translateY(3px) scale(.85);
+    transform-origin: 50% 100%;
+    transition: opacity .2s ease, transform .3s cubic-bezier(.34,1.3,.64,1);
+  }
+  .qc-bot-hat > i svg, .qc-bot-ears > i svg, .qc-bot-neck > i svg {
+    display: block; width: 100%; height: 100%; overflow: visible;
+  }
+
+  .qc-bot-hat > i[data-i="cap"] { left: -4px; top: -11px; width: 46px; height: 18px; color: var(--qc-b); }
+  .qc-bot-hat > i[data-i="beanie"] { left: -3px; top: -12px; width: 44px; height: 20px; color: var(--qc-b); }
+  .qc-bot-hat > i[data-i="crown"] { left: 2px; top: -9px; width: 34px; height: 14px; }
+  .qc-bot-hat > i[data-i="grad"] { left: -2px; top: -12px; width: 42px; height: 20px; }
+
+  .qc-bot-ears > i { color: var(--qc-a); }
+  .qc-bot-ears > i[data-i="cat"] { left: -3px; top: -8px; width: 44px; height: 12px; }
+  .qc-bot-ears > i[data-i="bunny"] { left: 1px; top: -20px; width: 36px; height: 24px; }
+
+  .qc-bot-neck > i[data-i="bow"],
+  .qc-bot-neck > i[data-i="scarf"] { inset: 0; }
+
+  .qc-bot[data-hat="cap"] .qc-bot-hat > i[data-i="cap"],
+  .qc-bot[data-hat="beanie"] .qc-bot-hat > i[data-i="beanie"],
+  .qc-bot[data-hat="crown"] .qc-bot-hat > i[data-i="crown"],
+  .qc-bot[data-hat="grad"] .qc-bot-hat > i[data-i="grad"],
+  .qc-bot[data-ears="cat"] .qc-bot-ears > i[data-i="cat"],
+  .qc-bot[data-ears="bunny"] .qc-bot-ears > i[data-i="bunny"],
+  .qc-bot[data-neck="bow"] .qc-bot-neck > i[data-i="bow"],
+  .qc-bot[data-neck="scarf"] .qc-bot-neck > i[data-i="scarf"] {
+    opacity: 1; transform: none;
+  }
+
+  /* 戴上帽子就把天线收起来，不然帽子上顶着一根铁丝 */
+  .qc-bot:not([data-hat="none"]) .qc-bot-antenna {
+    opacity: 0; transform: translateY(-3px) scaleY(.35);
+  }
+  /* 有帽子时蜘蛛网再往外让一点，别糊在帽檐上 */
+  .qc-bot:not([data-hat="none"]) .qc-bot-web { right: -9px; top: -12px; }
+
   @media (prefers-reduced-motion: reduce) {
     .qc-bot-body, .qc-bot-head, .qc-bot-eyes, .qc-bot-eye,
     .qc-bot-antenna::after, .qc-bot-tick path, .qc-bot-zzz i,
@@ -616,6 +664,116 @@
       '</g></g>';
     return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + d + '"/>' + spider + '</svg>';
   })();
+
+  /* ---------- 换装：帽子 / 耳朵 / 领结 ----------
+     全部挂在 .qc-bot-head 里面，这样能跟着呼吸、歪头、干完活抖一下一起动；
+     放外面的话帽子会浮在一个正在呼吸的脑袋上，一眼假。
+     SVG 用 currentColor 取皮肤色，具体颜色在 CSS 里按配件指定。 */
+  const WEAR_KINDS = ['hat', 'ears', 'neck'];
+  const WEAR_ITEMS = {
+    hat: ['none', 'cap', 'beanie', 'crown', 'grad'],
+    ears: ['none', 'cat', 'bunny'],
+    neck: ['none', 'bow', 'scarf']
+  };
+  const WEAR_CN = {
+    hat: { none: '不戴', cap: '棒球帽', beanie: '毛线帽', crown: '小皇冠', grad: '学士帽' },
+    ears: { none: '不戴', cat: '猫耳', bunny: '兔耳' },
+    neck: { none: '不戴', bow: '领结', scarf: '围巾' }
+  };
+
+  const HAT_SVG = {
+    cap:
+      '<svg viewBox="0 0 46 18" aria-hidden="true">' +
+      '<path d="M6 14.2a16 12 0 0 1 32 0z" fill="currentColor"/>' +
+      '<path d="M32.6 13.4c6.2.2 11.2 1.7 13 3.8-4.4 1.8-11.4 1.9-16 .7z" fill="currentColor"/>' +
+      '<path d="M32.6 14.9c5.4.3 9.6 1.4 11.4 2.9-3.8 1.2-9.2 1.2-13 .3z" fill="#000" opacity=".18"/>' +
+      '<circle cx="22" cy="4.6" r="1.7" fill="#fff" opacity=".8"/>' +
+      '</svg>',
+    beanie:
+      '<svg viewBox="0 0 44 20" aria-hidden="true">' +
+      '<path d="M8 14.4a14 12 0 0 1 28 0z" fill="currentColor"/>' +
+      '<rect x="5.6" y="12.4" width="32.8" height="4.8" rx="2.4" fill="currentColor"/>' +
+      '<rect x="5.6" y="12.4" width="32.8" height="4.8" rx="2.4" fill="#000" opacity=".16"/>' +
+      '<circle cx="22" cy="3" r="3.1" fill="#fff" opacity=".92"/>' +
+      '</svg>',
+    crown:
+      '<svg viewBox="0 0 34 14" aria-hidden="true">' +
+      '<path d="M3 12.2L4.7 3.5l6 4.4L17 1.2l6.3 6.7 6-4.4L31 12.2z" fill="#fbbf24" ' +
+      'stroke="#d9a406" stroke-width=".7" stroke-linejoin="round"/>' +
+      '<circle cx="17" cy="9.4" r="1.5" fill="#fff6c9"/>' +
+      '</svg>',
+    grad:
+      '<svg viewBox="0 0 42 20" aria-hidden="true">' +
+      '<path d="M14 10.4v4.2c0 1.7 3.1 2.9 7 2.9s7-1.2 7-2.9v-4.2z" fill="#232a36"/>' +
+      '<path d="M21 2.6l16 5.2-16 5.2L5 7.8z" fill="#2f3644"/>' +
+      '<path d="M21 2.6l16 5.2-16 1.6z" fill="#3c4557"/>' +
+      '<path d="M35.6 8.4v7.2" stroke="#fbbf24" stroke-width="1.1"/>' +
+      '<circle cx="35.6" cy="17" r="1.8" fill="#fbbf24"/>' +
+      '</svg>'
+  };
+
+  const EARS_SVG = {
+    cat:
+      '<svg viewBox="0 0 44 12" aria-hidden="true">' +
+      '<path d="M4 11.4L7.6 1l9 8.2z" fill="currentColor"/>' +
+      '<path d="M40 11.4L36.4 1l-9 8.2z" fill="currentColor"/>' +
+      '<path d="M8.2 9.8l2-5 4.2 3.6z" fill="#ff9db8" opacity=".78"/>' +
+      '<path d="M35.8 9.8l-2-5-4.2 3.6z" fill="#ff9db8" opacity=".78"/>' +
+      '</svg>',
+    bunny:
+      '<svg viewBox="0 0 36 24" aria-hidden="true">' +
+      '<ellipse cx="11" cy="10" rx="4.8" ry="9.6" fill="currentColor" transform="rotate(-13 11 10)"/>' +
+      '<ellipse cx="25" cy="10" rx="4.8" ry="9.6" fill="currentColor" transform="rotate(13 25 10)"/>' +
+      '<ellipse cx="11" cy="10" rx="2.2" ry="6.2" fill="#ff9db8" opacity=".74" transform="rotate(-13 11 10)"/>' +
+      '<ellipse cx="25" cy="10" rx="2.2" ry="6.2" fill="#ff9db8" opacity=".74" transform="rotate(13 25 10)"/>' +
+      '</svg>'
+  };
+
+  const NECK_SVG = {
+    bow:
+      '<svg viewBox="0 0 24 14" aria-hidden="true">' +
+      '<path d="M11 7L1.2 2.4v9.2z" fill="#ff5f8a"/>' +
+      '<path d="M13 7l9.8-4.6v9.2z" fill="#ff5f8a"/>' +
+      '<circle cx="12" cy="7" r="3" fill="#e8416f"/>' +
+      '<circle cx="12" cy="7" r="1.2" fill="#fff" opacity=".4"/>' +
+      '</svg>',
+    scarf:
+      '<svg viewBox="0 0 30 13" aria-hidden="true">' +
+      '<path d="M.6 5.2Q2 1.6 7 1.6h16q5 0 6.4 3.6l-1.8 5.6Q15 12.6 2.4 10.8z" fill="#34d399"/>' +
+      '<path d="M.6 5.2Q2 1.6 7 1.6h16q5 0 6.4 3.6l-.5 1.5H1.1z" fill="#25a87a"/>' +
+      '<path d="M18.6 7.6c.1 2 .1 3.4 0 5.1l3.5-1.2V8.1z" fill="#2bb584"/>' +
+      '</svg>'
+  };
+
+  const wearHtml = (kind, map) =>
+    WEAR_ITEMS[kind]
+      .filter((k) => k !== 'none')
+      .map((k) => '<i data-i="' + k + '">' + (map[k] || '') + '</i>')
+      .join('');
+
+  const HAT_HTML = wearHtml('hat', HAT_SVG);
+  const EARS_HTML = wearHtml('ears', EARS_SVG);
+  const NECK_HTML = wearHtml('neck', NECK_SVG);
+
+  /* 机器人本体结构：衣橱的预览也复用它，省得两处各写一份 */
+  const BOT_INNER =
+    '<span class="qc-bot-body">' +
+    '<span class="qc-bot-antenna"></span>' +
+    '<span class="qc-bot-head">' +
+    '<span class="qc-bot-ears">' + EARS_HTML + '</span>' +
+    '<span class="qc-bot-eyes"><span class="qc-bot-eye"></span><span class="qc-bot-eye"></span></span>' +
+    '<span class="qc-bot-blush"><i></i><i></i></span>' +
+    '<span class="qc-bot-spiral"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="' + SPIRAL + '"/></svg><svg viewBox="0 0 10 10" aria-hidden="true"><path d="' + SPIRAL + '"/></svg></span>' +
+    '<span class="qc-bot-zzz"><i>z</i><i>z</i><i>z</i></span>' +
+    '<span class="qc-bot-hearts"><i class="qc-bot-heart"></i><i class="qc-bot-heart"></i><i class="qc-bot-heart"></i></span>' +
+    '<span class="qc-bot-neck">' + NECK_HTML + '</span>' +
+    '<span class="qc-bot-hat">' + HAT_HTML + '</span>' +
+    '<span class="qc-bot-web">' + WEB_SVG + '</span>' +
+    '<svg class="qc-bot-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5 L10 17 L18.5 7.5"/></svg>' +
+    '</span></span>' +
+    '<span class="qc-ball"><i></i></span>' +
+    '<span class="qc-pomo"><span class="qc-pomo-t"></span><span class="qc-pomo-bar"><i></i></span></span>' +
+    '<span class="qc-bot-bubble"><span class="qc-bot-bubble-txt"></span></span>';
 
   /* 交互参数 */
   const FOLLOW_R = 220;      // 鼠标进入这个半径，眼睛开始跟
@@ -1429,21 +1587,8 @@
     btn.className = 'qc-bot';
     btn.dataset.state = 'idle';
     btn.title = '点我：读题 → 作答 → 填入；按住可以拖到别处';
-    btn.innerHTML =
-      '<span class="qc-bot-body">' +
-      '<span class="qc-bot-antenna"></span>' +
-      '<span class="qc-bot-head">' +
-      '<span class="qc-bot-eyes"><span class="qc-bot-eye"></span><span class="qc-bot-eye"></span></span>' +
-      '<span class="qc-bot-blush"><i></i><i></i></span>' +
-      '<span class="qc-bot-spiral"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="' + SPIRAL + '"/></svg><svg viewBox="0 0 10 10" aria-hidden="true"><path d="' + SPIRAL + '"/></svg></span>' +
-      '<span class="qc-bot-zzz"><i>z</i><i>z</i><i>z</i></span>' +
-      '<span class="qc-bot-hearts"><i class="qc-bot-heart"></i><i class="qc-bot-heart"></i><i class="qc-bot-heart"></i></span>' +
-      '<span class="qc-bot-web">' + WEB_SVG + '</span>' +
-      '<svg class="qc-bot-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5 L10 17 L18.5 7.5"/></svg>' +
-      '</span></span>' +
-      '<span class="qc-ball"><i></i></span>' +
-      '<span class="qc-pomo"><span class="qc-pomo-t"></span><span class="qc-pomo-bar"><i></i></span></span>' +
-      '<span class="qc-bot-bubble"><span class="qc-bot-bubble-txt"></span></span>';
+    btn.innerHTML = BOT_INNER;
+    applyWear(btn);
 
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1687,5 +1832,48 @@
     return SKINS[(i + 1) % SKINS.length];
   }
 
-  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, rollTo, rollHome, growWeb, clearWeb, armWeb: scheduleWeb, setWebRetry: (ms) => { webRetry = Math.max(20, Number(ms) || WEB_RETRY); }, webAfter: () => WEB_AFTER, wanderOnce: wander, setSkin, nextSkin, getEl: () => el, CSS, SKINS };
+  /* ---------- 换装 ---------- */
+  function normWear(w) {
+    const out = {};
+    WEAR_KINDS.forEach((k) => {
+      const v = w && w[k];
+      out[k] = WEAR_ITEMS[k].indexOf(v) >= 0 ? v : 'none';
+    });
+    return out;
+  }
+
+  /* 三个 data-* 一律写满（包括 none）。CSS 靠 :not([data-hat="none"]) 判断有没有戴帽子，
+     属性缺省和 "none" 在 :not() 里行为不同，必须补够 */
+  function applyWear(node) {
+    const t = node || el;
+    if (!t) return;
+    const w = normWear(Q.S && Q.S.botWear);
+    t.dataset.hat = w.hat;
+    t.dataset.ears = w.ears;
+    t.dataset.neck = w.neck;
+  }
+
+  function setWear(w, opts) {
+    Q.S.botWear = normWear(w);
+    applyWear();
+    if (!opts || opts.save !== false) {
+      try { chrome.storage.sync.set({ botWear: Q.S.botWear }); } catch (e) {}
+    }
+    return Q.S.botWear;
+  }
+
+  function getWear() {
+    return normWear(Q.S && Q.S.botWear);
+  }
+
+  function randomWear() {
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    return {
+      hat: pick(WEAR_ITEMS.hat.slice(1)),
+      ears: pick(WEAR_ITEMS.ears),
+      neck: pick(WEAR_ITEMS.neck)
+    };
+  }
+
+  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, rollTo, rollHome, growWeb, clearWeb, armWeb: scheduleWeb, setWebRetry: (ms) => { webRetry = Math.max(20, Number(ms) || WEB_RETRY); }, webAfter: () => WEB_AFTER, wanderOnce: wander, setSkin, nextSkin, setWear, getWear, randomWear, WEAR_ITEMS, WEAR_CN, BOT_INNER, getEl: () => el, CSS, SKINS };
 })();

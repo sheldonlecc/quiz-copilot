@@ -33,6 +33,7 @@
     pageLimit: 30,
     pomoCustom: 25,
     chatLevel: 2,
+    botWear: { hat: 'none', ears: 'none', neck: 'none' },
     showFab: true,
     diag: '',
     lastUsage: null,

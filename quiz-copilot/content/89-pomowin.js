@@ -221,6 +221,7 @@
     if (win && win.isConnected) { refresh(); return; }
     ensureStyle();
     if (Q.closePanel) Q.closePanel();   // 一个位置只放一个窗口
+    if (Q.wardrobe) Q.wardrobe.close();
 
     const el = document.createElement('div');
     el.className = 'qc-pw';
