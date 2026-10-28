@@ -40,6 +40,19 @@
             .join('\n');
         }
 
+        if (q.type === 'essay') {
+          const need = q.wordHint || (Q.essayWordHint ? Q.essayWordHint(q.stem) : '');
+          return [
+            head,
+            q.stem,
+            need ? `（题目要求 ${need}，请写足，不要低于下限）` : '',
+            '（这是论述/简答题：如果题目给了两个或多个可选题，只挑一个写，第一行用「选择：第X题」标注；',
+            '正文成段写、段落之间空一行；不要列小标题、不要写「答：」、不要用分号代替换行；只输出正文）'
+          ]
+            .filter(Boolean)
+            .join('\n');
+        }
+
         if (q.type === 'blank') {
           const n = (q.blanks || []).length || 1;
           const hint =

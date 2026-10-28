@@ -97,8 +97,85 @@
     }
   }
 
+  /* ---------- 论述题：整段写入，不走多空分隔 ---------- */
+
+  function escHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /* 段落之间用 \n\n 分开，单换行变 <br> */
+  function toEssayHtml(text) {
+    return String(text)
+      .split(/\n{2,}/)
+      .map((p) => '<p>' + escHtml(p).replace(/\n/g, '<br>') + '</p>')
+      .join('');
+  }
+
+  function isRichEdit(el, doc) {
+    return !!(el && (el.isContentEditable || el === doc.body));
+  }
+
+  /* 富文本编辑器：先走 execCommand('insertText')，让编辑器收到「输入」而不是被改 DOM */
+  function setEssayValue(el, text) {
+    const doc = el.ownerDocument || document;
+    const win = doc.defaultView || window;
+    if (!isRichEdit(el, doc)) {
+      setNativeValue(el, text);
+      return;
+    }
+
+    try { el.focus(); } catch (e) {}
+
+    let ok = false;
+    try {
+      const range = doc.createRange();
+      range.selectNodeContents(el);
+      const sel = win.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      ok = doc.execCommand('insertText', false, text);
+    } catch (e) {}
+
+    if (!ok) {
+      try {
+        el.innerHTML = toEssayHtml(text);
+      } catch (e) {}
+    }
+
+    try {
+      el.dispatchEvent(new InputEvent('input', { bubbles: true, data: text, inputType: 'insertText' }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    } catch (e) {}
+  }
+
+  function readEssay(el) {
+    const doc = el.ownerDocument || document;
+    if (isRichEdit(el, doc)) return String(el.innerText || el.textContent || '');
+    return String(el.value || '');
+  }
+
+  function fillEssay(q) {
+    const target = (q.blanks || [])[0] || {};
+    const el = target.el;
+    if (!el || !el.isConnected) return '这题找不到编辑框了（页面可能重新渲染过），请重新读取';
+
+    const text = String(q.answer || '').trim();
+    if (!text) return '没有拿到答案';
+
+    setEssayValue(el, text);
+
+    const got = readEssay(el).replace(/\s+/g, '');
+    const want = text.replace(/\s+/g, '');
+    if (!got) return '编辑器没接受写入，点「复制全文」手动粘贴';
+    if (got.length < want.length * 0.85) {
+      return `只写进去 ${got.length} 字（应写 ${want.length} 字），建议复制全文手动粘贴`;
+    }
+    return '';
+  }
+
   /* 用于展示/复制的答案文本 */
   function answerDisplay(q) {
+    if (q.type === 'essay') return q.answer || '（未作答）';
     if (q.type === 'blank' || q.type === 'match' || q.type === 'matrix') {
       const parts = splitBlankAnswer(q.answer);
       if (!parts.length) return '（未作答）';
@@ -171,6 +248,7 @@
   }
 
   function fillOne(q) {
+    if (q.type === 'essay') return fillEssay(q);
     if (q.type === 'blank' || q.type === 'match' || q.type === 'matrix') return fillBlank(q);
 
     const targets = targetOptions(q);
@@ -262,5 +340,5 @@
     return { ok: okCount, total: answered, fail: failCount };
   }
 
-  Object.assign(Q, { targetOptions, clickInput, splitBlankAnswer, setNativeValue, answerDisplay, pickSelectOption, setSelectValue, fillBlank, fillOne, buildTextIndex, findClickableByText, fillAll });
+  Object.assign(Q, { targetOptions, clickInput, splitBlankAnswer, setNativeValue, answerDisplay, pickSelectOption, setSelectValue, fillBlank, fillOne, fillEssay, setEssayValue, readEssay, toEssayHtml, buildTextIndex, findClickableByText, fillAll });
 })();

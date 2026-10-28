@@ -172,6 +172,27 @@
   }
   .qc-band-v { font-size: 12.5px; color: #d7f5e4; flex: 1 1 auto; min-width: 0; word-break: break-word; }
   .qc-band.empty .qc-band-v { color: #c2ad82; }
+  /* 论述题：不给一整坨，先看字数和开头，需要就整篇复制 */
+  .qc-essay {
+    background: rgba(52,211,153,.06);
+    border: 1px solid rgba(52,211,153,.2);
+    border-radius: 8px;
+    padding: 6px 9px 7px;
+    margin-bottom: 6px;
+  }
+  .qc-essay-meta {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11.5px; color: #8fd9b6; margin-bottom: 4px;
+  }
+  .qc-essay-meta b { font-size: 13px; color: #6ee7a8; }
+  .qc-essay-need { color: #7f8a9c; }
+  .qc-essay-meta .qc-mini { margin-left: auto; }
+  .qc-essay-pre {
+    font-size: 11.5px; color: #c2cbd9; line-height: 1.55;
+    max-height: 58px; overflow: auto;
+    white-space: pre-wrap; word-break: break-word;
+  }
+
   .qc-band-row { display: flex; gap: 7px; width: 100%; font-size: 12.5px; }
   .qc-band-row + .qc-band-row { margin-top: 4px; }
   .qc-band-n { color: #6ee7a8; font-weight: 600; flex: 0 0 auto; min-width: 12px; }

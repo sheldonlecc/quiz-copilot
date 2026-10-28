@@ -151,6 +151,17 @@
           let band = '';
           if (!q.answer) {
             band = `<div class="qc-band empty"><span class="qc-band-k">未作答</span></div>`;
+          } else if (q.type === 'essay') {
+            const raw = String(q.answer);
+            const chars = raw.replace(/\s/g, '').length;
+            const need = (Q.essayWordHint ? Q.essayWordHint(q.stem) : '') || q.wordHint || '';
+            band = `<div class="qc-essay">
+              <div class="qc-essay-meta">
+                <b>${chars}</b> 字${need ? `<span class="qc-essay-need">要求 ${esc(need)}</span>` : ''}
+                <button class="qc-mini" data-act="copy-full" data-idx="${q.index}">复制全文</button>
+              </div>
+              <div class="qc-essay-pre">${esc(raw.slice(0, 140))}${raw.length > 140 ? '…' : ''}</div>
+            </div>`;
           } else if (q.type === 'matrix') {
             const parts = splitBlankAnswer(q.answer);
             let k = 0;
@@ -360,6 +371,12 @@
       render();
       return;
     }
+    if (act === 'copy-full') {
+      const q = S.questions.find((x) => x.index === idx);
+      if (q) copyText(String(q.answer || ''));
+      return;
+    }
+
     if (act === 'copy-one') {
       const q = S.questions.find((x) => x.index === idx);
       if (q) copyText(`第${q.index}题：${answerDisplay(q)}${q.reason ? ' —— ' + q.reason : ''}`);

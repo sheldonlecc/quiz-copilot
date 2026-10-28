@@ -23,6 +23,11 @@
 
   const PERSONAL_ID = /^(name|username|user|email|phone|tel|code|pwd|password|search|keyword|realname)$/;
 
+  /* ---------- 论述 / 简答：大编辑框 + 题干里有这些词 ---------- */
+  const ESSAY_HINT =
+    /(论述|简答|解答题|问答|案例分析|材料分析|综合题|谈谈(你|一下|你的)|阐述|试述|试论|评述|不少于\s*\d+\s*字|\d{2,4}\s*[-~—－至]\s*\d{2,4}\s*字)/;
+  const ESSAY_ELS = new WeakSet();   // 已经被判成论述题的元素，填空题别再抢
+
   /* 判断一个元素能不能当填空框；返回原因，便于诊断 */
   function checkFillable(el) {
     if (!el) return { ok: false, why: '元素不存在' };
@@ -337,10 +342,136 @@
   const docOrder = (a, b) =>
     a === b ? 0 : a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
 
+  /* ============ 论述题（富文本编辑器 / 大 textarea） ============ */
+
+  /* 编辑框在 iframe 里时，量尺寸、找题目容器都要回到父文档的 iframe 元素上 */
+  function editorAnchor(el) {
+    try {
+      const doc = el.ownerDocument || document;
+      if (doc === document) return el;
+      const win = doc.defaultView;
+      if (!win) return null;
+      return win.frameElement || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function editorLike(el) {
+    if (!el || !el.isConnected) return false;
+    if (el.disabled || el.readOnly) return false;
+    if (!el.isContentEditable && el.tagName !== 'TEXTAREA') return false;
+
+    const anchor = editorAnchor(el);
+    if (anchor === null && (el.ownerDocument || document) !== document) return false;
+    const box = anchor || el;
+
+    if (!isVisible(box) && !isVisible(el)) return false;
+
+    // 太小的不算论述框，避免把评论框、搜索框算进来
+    const r = box.getBoundingClientRect();
+    if (r.width < 360 || r.height < 72) return false;
+
+    const sig = [
+      el.getAttribute('name'),
+      el.id,
+      el.getAttribute('placeholder'),
+      el.getAttribute('aria-label'),
+      typeof el.className === 'string' ? el.className : '',
+      box.getAttribute && box.getAttribute('name'),
+      box.id,
+      typeof box.className === 'string' ? box.className : ''
+    ]
+      .filter(Boolean)
+      .join(' ');
+    if (NOT_QUIZ_SIG.test(sig) || NOT_QUIZ_CN.test(sig)) return false;
+
+    const form = el.closest && el.closest('form');
+    if (form && form.querySelector('input[type="password"]')) return false;
+
+    return true;
+  }
+
+  function essayCandidates() {
+    const out = [];
+    const seen = new Set();
+    for (const doc of allDocs()) {
+      let list = [];
+      try {
+        list = Array.from(doc.querySelectorAll('textarea, [contenteditable]'));
+      } catch (e) {
+        continue;
+      }
+      // 设计模式下的 iframe（UEditor 那类）body 不一定带 contenteditable 属性
+      try {
+        if (doc.body && (doc.body.isContentEditable || /on/i.test(String(doc.designMode)))) {
+          list.push(doc.body);
+        }
+      } catch (e) {}
+      for (const el of list) {
+        if (seen.has(el)) continue;
+        seen.add(el);
+        try {
+          if (el.closest && el.closest('#' + HOST_ID)) continue;
+        } catch (e) {}
+        if (editorLike(el)) out.push(el);
+      }
+    }
+    return out;
+  }
+
+  /* 题干里顺带把字数要求抠出来，给提示词用 */
+  function essayWordHint(text) {
+    const m1 = String(text || '').match(/(\d{2,4})\s*[-~—－至]\s*(\d{2,4})\s*字/);
+    if (m1) return m1[1] + '-' + m1[2] + ' 字';
+    const m2 = String(text || '').match(/不少于\s*(\d{2,4})\s*字/);
+    if (m2) return '不少于 ' + m2[1] + ' 字';
+    return '';
+  }
+
+  function extractEssays() {
+    const out = [];
+    const used = new Set();
+    for (const el of essayCandidates()) {
+      const anchor = editorAnchor(el) || el;
+      let container = null;
+      try {
+        container = blankContainer(anchor);
+      } catch (e) {
+        continue;
+      }
+      if (!container || used.has(container)) continue;
+      if (!isVisible(container)) continue;
+
+      let stem = stemWithBlanks(container, [anchor]);
+      if (!stem) continue;
+      // 论述题不需要「____」占位，去掉看着更干净
+      stem = stem.replace(/\s*_{2,}\s*/g, ' ').replace(/\s+/g, ' ').trim();
+      if (stem.length < 12) continue;
+      if (!ESSAY_HINT.test(stem)) continue;
+
+      used.add(container);
+      ESSAY_ELS.add(el);
+      out.push({
+        source: 'blank',
+        type: 'essay',
+        essay: true,
+        stem,
+        wordHint: essayWordHint(stem),
+        options: [],
+        blanks: [{ el, anchor }],
+        root: container
+      });
+    }
+    return out;
+  }
+
   function extractBlanks() {
+    const essays = extractEssays();
     const { ok } = collectCandidates();
-    const els = ok.map((o) => o.el);
-    if (!els.length) return [];
+    // 已经被判成论述题的大编辑框，别再当填空题处理一遍
+    const els = ok.map((o) => o.el).filter((e) => !ESSAY_ELS.has(e));
+    if (!els.length) return essays;
 
     const out = [];
 
@@ -415,8 +546,8 @@
       });
     }
 
-    return out;
+    return essays.concat(out);
   }
 
-  Object.assign(Q, { NOT_QUIZ_SIG, NOT_QUIZ_CN, ANSWER_LABEL, PERSONAL_ID, checkFillable, isQuizFillable, nearbyLabelText, collectCandidates, looksLikeQuestion, blankContainer, stemWithBlanks, groupTable, matrixInfo, stemWithoutTables, tableContainer, extractBlanks });
+  Object.assign(Q, { NOT_QUIZ_SIG, NOT_QUIZ_CN, ANSWER_LABEL, PERSONAL_ID, checkFillable, isQuizFillable, nearbyLabelText, collectCandidates, looksLikeQuestion, blankContainer, stemWithBlanks, groupTable, matrixInfo, stemWithoutTables, tableContainer, extractBlanks, extractEssays, essayCandidates, essayWordHint, editorLike, ESSAY_HINT });
 })();

@@ -3,6 +3,25 @@
 这个文件记录每个版本改了什么，方便交接和回看。
 版本号遵循「主版本.次版本.修订号」：加功能升次版本，修 bug 升修订号。
 
+## [1.17.0] - 2026-10-28
+
+### 新增
+
+- **论述 / 简答题（essay）**：大编辑框（textarea / contenteditable / 同源 iframe，含 UEditor 的 designMode）且题干命中「论述、简答、案例分析、谈谈、不少于 N 字、700-1000字」→ 归为 `essay`，不再当填空处理
+- 从题干里解析字数要求，随提示词一起给模型；二选一要求只写一题，并在开头标「选择：第X题」
+- 填充分三种编辑器：textarea 走原生 setter；contenteditable 走 `focus + selectAll + execCommand('insertText')`，失败退 `innerHTML`；iframe 直接写 `body`
+- 面板论述题卡片：字数、要求、开头摘要、「复制全文」
+
+### 修复
+
+- 论述题以前被 `splitBlankAnswer` 按分号切段，只有一个编辑框时只写第一段（从第一个分号截断）；现在整段写入
+- 大编辑框（宽度 > 820px）以前被 `checkFillable` 判「过宽」直接跳过，论述题现在单独放宽
+
+### 变更
+
+- 请求显式带 `max_tokens: 4000`（原来不传，靠服务商默认值）
+- `TYPE_CN` 增加 `essay: '论述'`
+
 ## [1.16.1] - 2026-10-28
 
 ### 修复

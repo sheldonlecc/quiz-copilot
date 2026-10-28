@@ -80,6 +80,13 @@
 
     const { raw, ok, rejected } = collectCandidates();
     const readOnlyCount = rejected.filter((r) => r.why === 'readOnly' || r.why === 'disabled').length;
+
+    // 论述题单独统计：它们往往会因为「过宽」被填空初筛拒掉，得让用户看到
+    let essayCount = 0;
+    try {
+      essayCount = Q.extractEssays ? Q.extractEssays().length : 0;
+    } catch (e) {}
+    if (essayCount) push(`论述/简答编辑器：${essayCount} 个（大编辑框，按论述题处理）`);
     push(`输入类元素总数：${raw.length} 个，通过初筛：${ok.length} 个` +
       (readOnlyCount ? `，其中 ${readOnlyCount} 个是只读/禁用的` : ''));
     push('');

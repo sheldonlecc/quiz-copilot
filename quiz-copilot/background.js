@@ -35,7 +35,11 @@ const SYSTEM_PROMPT = [
   '8. 计算题、数值填空题：必须先把算式在 reason 里算完，再把算式的最终结果原样写进 answer。',
   '   answer 与 reason 里最后一个「=」或「≈」后面的数值必须完全相同，不能一个写 1.00、另一个写 1.41。',
   '   题目要求保留两位小数时，answer 也保留两位（如 "1.41"）；题目没要求时，按计算结果的自然精度给出。',
-  '9. 如果同一题你算了两遍得到不同结果，以最后一次完整计算的结论为准，并只把那个数写进 answer。'
+  '9. 如果同一题你算了两遍得到不同结果，以最后一次完整计算的结论为准，并只把那个数写进 answer。',
+  '10. 论述题 / 简答题：answer 直接给完整正文，不要写「答：」，段落之间用两个换行分隔；',
+  '    题目写了字数要求（例如 700-1000 字）就必须写足，不要明显低于下限；',
+  '    题目给多个可选题时只写一个，并在第一行用「选择：第X题」标注；',
+  '    不要列小标题、不要用分号把整篇串成一段；reason 只写一句主旨，不要重复正文。'
 ].join('\n');
 
 /* 划词解释用的提示词：不答题，只讲人话 */
@@ -117,6 +121,8 @@ async function callChat(userText, opts = {}) {
   const base = {
     model: cfg.model || DEFAULTS.model,
     temperature: typeof cfg.temperature === 'number' ? cfg.temperature : 0.2,
+    // 论述题要写 700-1000 字，默认上限不够；显式给足，短题也不受影响
+    max_tokens: opts.maxTokens || 4000,
     messages: [
       { role: 'system', content: opts.system || SYSTEM_PROMPT },
       { role: 'user', content: userText }

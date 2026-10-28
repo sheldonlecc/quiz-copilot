@@ -167,7 +167,7 @@
 
   // 从别的模块挪过来的两个常量：多个模块都要用，放这里最省事
   const BLANK_MARK = /(_{2,}|＿{2,}|（\s{0,4}）|\(\s{0,4}\))/;
-  const TYPE_CN = { single: '单选', multi: '多选', judge: '判断', blank: '填空', match: '匹配', matrix: '表格' };
+  const TYPE_CN = { single: '单选', multi: '多选', judge: '判断', blank: '填空', match: '匹配', matrix: '表格', essay: '论述' };
 
   Object.assign(Q, { HOST_ID, LETTERS, VER, S, norm, squash, oneLine, isVisible, esc, allDocs, countFrames, commonAncestor, OPT_CTRL_SEL, nearestOptionBox, BLANK_MARK, TYPE_CN });
 })();
