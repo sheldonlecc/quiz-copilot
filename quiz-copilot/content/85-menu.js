@@ -80,8 +80,7 @@
   .qc-menu-sep { height: 1px; margin: 5px 6px; background: rgba(255,255,255,.08); }
 
   .qc-menu-chips { display: flex; align-items: center; gap: 4px; padding: 1px 9px 5px; }
-  .qc-menu-chip-k { font-size: 10.5px; color: #7f8a9c; flex: 0 0 auto; width: 26px; }
-  .qc-menu-chip {
+  .qc-menu-chip-k { font-size: 10.5px; color: #7f8a9c; flex: 0 0 auto; width: 26px; }  .qc-menu-chip {
     flex: 1 1 0; min-width: 0; padding: 4px 0;
     border-radius: 6px; cursor: pointer;
     font: inherit; font-size: 11.5px; color: #cfd6e2;
@@ -99,6 +98,28 @@
     border-color: rgba(120,165,255,.7);
     color: #fff; font-weight: 600;
   }
+
+  /* 自定义时长：一个数字框 + 专注/休息两个按钮 */
+  .qc-menu-custom { display: flex; align-items: center; gap: 4px; padding: 1px 9px 5px; }
+  .qc-menu-custom .qc-menu-chip-k { width: 34px; white-space: nowrap; }
+  .qc-menu-num {
+    width: 32px; flex: 0 0 auto; padding: 3px 2px; text-align: center;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 5px; color: #e8ecf3;
+    font: inherit; font-size: 11.5px; outline: none;
+  }
+  .qc-menu-num:focus { border-color: rgba(79,140,255,.62); background: rgba(79,140,255,.12); }
+  .qc-menu-unit { font-size: 10.5px; color: #7f8a9c; flex: 0 0 auto; }
+  .qc-menu-mini {
+    flex: 1 1 0; min-width: 0; padding: 4px 0;
+    border-radius: 6px; cursor: pointer;
+    font: inherit; font-size: 11px; color: #cfd6e2;
+    background: rgba(79,140,255,.14);
+    border: 1px solid rgba(79,140,255,.3);
+    transition: background .1s, color .1s;
+  }
+  .qc-menu-mini:hover { background: rgba(79,140,255,.3); color: #fff; }
   .qc-menu-hd {
     padding: 3px 9px 5px; font-size: 10.5px; color: #7f8a9c;
     display: flex; align-items: center; gap: 5px;
@@ -163,6 +184,20 @@
     return `<div class="qc-menu-chips"><span class="qc-menu-chip-k">${esc(label)}</span>${btns}</div>`;
   }
 
+  /* 预设之外还能自己填一个分钟数 */
+  function customPomoRow() {
+    const v = Math.max(1, Math.min(180, Number(S.pomoCustom) || 25));
+    return (
+      `<div class="qc-menu-custom">` +
+      `<span class="qc-menu-chip-k">自定义</span>` +
+      `<input class="qc-menu-num" type="text" inputmode="numeric" maxlength="3" value="${v}" data-custom-input>` +
+      `<span class="qc-menu-unit">分</span>` +
+      `<button class="qc-menu-mini" data-custom-start="0">专注</button>` +
+      `<button class="qc-menu-mini" data-custom-start="1">休息</button>` +
+      `</div>`
+    );
+  }
+
   function limits() {
     const cur = Number(S.pageLimit) || 30;
     return PAGE_LIMITS.indexOf(cur) >= 0 ? PAGE_LIMITS : PAGE_LIMITS.concat([cur]).sort((a, b) => a - b);
@@ -212,6 +247,7 @@
     } else {
       parts.push(pomoChips('专注', (Q.pomo && Q.pomo.FOCUS_MIN) || [15, 25, 45, 60], false));
       parts.push(pomoChips('休息', (Q.pomo && Q.pomo.BREAK_MIN) || [5, 10, 15], true));
+      parts.push(customPomoRow());
     }
 
     /* 四、外观 */
@@ -260,6 +296,47 @@
         refresh();
       });
     });
+
+    const inp = el.querySelector('[data-custom-input]');
+    if (inp) {
+      inp.addEventListener('input', () => {
+        inp.value = inp.value.replace(/[^\d]/g, '').slice(0, 3);
+      });
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          startCustom(false);
+        }
+      });
+      inp.addEventListener('change', () => {
+        const v = clampMinutes(inp.value);
+        S.pomoCustom = v;
+        inp.value = String(v);
+        try { chrome.storage.sync.set({ pomoCustom: v }); } catch (err) {}
+      });
+    }
+
+    el.querySelectorAll('[data-custom-start]').forEach((b) => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startCustom(b.getAttribute('data-custom-start') === '1');
+      });
+    });
+  }
+
+  function clampMinutes(raw) {
+    return Math.max(1, Math.min(180, Math.round(Number(raw)) || 25));
+  }
+
+  /* 用输入框里的分钟数开始一段专注 / 休息 */
+  function startCustom(isBreak) {
+    const inp = menuEl && menuEl.querySelector('[data-custom-input]');
+    const v = clampMinutes(inp ? inp.value : S.pomoCustom);
+    S.pomoCustom = v;
+    try { chrome.storage.sync.set({ pomoCustom: v }); } catch (e) {}
+    close();
+    if (Q.pomo) Q.pomo.start(v, isBreak);
   }
 
   /* 重画内容但不关菜单；高度变了就往上顶，别让菜单在脚下乱跳 */

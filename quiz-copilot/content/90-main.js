@@ -187,13 +187,14 @@
   function boot() {
     try {
       chrome.storage.sync.get(
-        { autoFill: true, showFab: true, botSkin: 'blue', selExplain: true, autoPage: false, pageLimit: 30 },
+        { autoFill: true, showFab: true, botSkin: 'blue', selExplain: true, autoPage: false, pageLimit: 30, pomoCustom: 25 },
         (cfg) => {
         S.autoFill = !!cfg.autoFill;
         S.autoPage = !!cfg.autoPage;
         // 兼容老配置：出现「翻页开、填关」就按联动规则修正
         if (S.autoPage) S.autoFill = true;
         S.pageLimit = Number(cfg.pageLimit) || 30;
+        S.pomoCustom = Number(cfg.pomoCustom) || 25;
         S.showFab = cfg.showFab !== false;
         S.selExplain = cfg.selExplain !== false;
         S.skin = cfg.botSkin || 'blue';
@@ -220,6 +221,7 @@
           if (!S.autoFill) S.autoPage = false;
         }
         if (changes.pageLimit) S.pageLimit = Number(changes.pageLimit.newValue) || 30;
+        if (changes.pomoCustom) S.pomoCustom = Number(changes.pomoCustom.newValue) || 25;
         if (changes.selExplain) S.selExplain = changes.selExplain.newValue !== false;
         if (changes.botSkin) {
           S.skin = changes.botSkin.newValue || 'blue';

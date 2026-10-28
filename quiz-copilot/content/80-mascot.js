@@ -253,6 +253,8 @@
   }
   /* 甩头不转脑袋，靠两只眼睛整体左右荡来表现；幅度一下比一下小，最后停住 */
   .qc-bot[data-mood="daze"] .qc-bot-eyes {
+    /* 两只眼睛各自转了 45°，内侧的空隙会被吃掉，所以这里单独拉开一点 */
+    gap: 12px;
     animation: qc-bot-eyeshake 1.15s cubic-bezier(.33,.02,.25,1) 1 both;
   }
 

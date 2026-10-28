@@ -31,6 +31,7 @@
     autoFill: false,
     autoPage: false,
     pageLimit: 30,
+    pomoCustom: 25,
     showFab: true,
     diag: '',
     lastUsage: null,
