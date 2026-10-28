@@ -8,6 +8,7 @@
     autoFill: true,
     autoPage: false,
     pageLimit: 30,
+    chatLevel: 2,
     showFab: true,
     selExplain: true,
     botSkin: 'blue'
@@ -80,6 +81,7 @@
     $('swAuto').classList.toggle('on', !!cfg.autoFill);
     $('swPage').classList.toggle('on', !!cfg.autoPage);
     $('pageLimit').value = String(cfg.pageLimit || 30);
+    $('chatLevel').value = String(cfg.chatLevel == null ? 2 : cfg.chatLevel);
     $('swFab').classList.toggle('on', cfg.showFab !== false);
     $('swSel').classList.toggle('on', cfg.selExplain !== false);
     $('skin').value = cfg.botSkin || 'blue';
@@ -115,6 +117,10 @@
     chrome.storage.sync.set({ pageLimit: Number(e.target.value) || 30 });
   });
 
+  $('chatLevel').addEventListener('change', (e) => {
+    chrome.storage.sync.set({ chatLevel: Number(e.target.value) });
+  });
+
   $('swFab').addEventListener('click', () => {
     const on = $('swFab').classList.toggle('on');
     chrome.storage.sync.set({ showFab: on });
@@ -147,6 +153,7 @@
         autoFill: $('swAuto').classList.contains('on'),
         autoPage: $('swPage').classList.contains('on'),
         pageLimit: Number($('pageLimit').value) || 30,
+        chatLevel: Number($('chatLevel').value),
         showFab: $('swFab').classList.contains('on'),
         selExplain: $('swSel').classList.contains('on'),
         botSkin: $('skin').value

@@ -187,7 +187,7 @@
   function boot() {
     try {
       chrome.storage.sync.get(
-        { autoFill: true, showFab: true, botSkin: 'blue', selExplain: true, autoPage: false, pageLimit: 30, pomoCustom: 25 },
+        { autoFill: true, showFab: true, botSkin: 'blue', selExplain: true, autoPage: false, pageLimit: 30, pomoCustom: 25, chatLevel: 2 },
         (cfg) => {
         S.autoFill = !!cfg.autoFill;
         S.autoPage = !!cfg.autoPage;
@@ -195,6 +195,7 @@
         if (S.autoPage) S.autoFill = true;
         S.pageLimit = Number(cfg.pageLimit) || 30;
         S.pomoCustom = Number(cfg.pomoCustom) || 25;
+        S.chatLevel = cfg.chatLevel == null ? 2 : Number(cfg.chatLevel);
         S.showFab = cfg.showFab !== false;
         S.selExplain = cfg.selExplain !== false;
         S.skin = cfg.botSkin || 'blue';
@@ -205,6 +206,7 @@
         if (Q.menu && Q.menu.mount) Q.menu.mount();
         if (Q.pomo && Q.pomo.init) Q.pomo.init();
         if (Q.sel && Q.sel.init) Q.sel.init();
+        if (Q.chat && Q.chat.init) Q.chat.init();
         // 上一页刚点过「下一页」的话，这里接着做
         if (Q.chain && Q.chain.resume) setTimeout(() => Q.chain.resume(), 500);
       });
@@ -222,6 +224,7 @@
         }
         if (changes.pageLimit) S.pageLimit = Number(changes.pageLimit.newValue) || 30;
         if (changes.pomoCustom) S.pomoCustom = Number(changes.pomoCustom.newValue) || 25;
+        if (changes.chatLevel) S.chatLevel = changes.chatLevel.newValue == null ? 2 : Number(changes.chatLevel.newValue);
         if (changes.selExplain) S.selExplain = changes.selExplain.newValue !== false;
         if (changes.botSkin) {
           S.skin = changes.botSkin.newValue || 'blue';

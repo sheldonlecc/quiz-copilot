@@ -396,6 +396,32 @@
     right: auto; left: 14px;
   }
 
+
+  /* ---------- 变成小球滚过去 ---------- */
+  .qc-bot[data-form="ball"] { cursor: default; }
+  .qc-bot[data-form="ball"] .qc-bot-body {
+    position: relative;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 28%, #a8c4ff 0%, #4f8cff 46%, #2749c4 100%);
+    box-shadow: 0 4px 12px rgba(40,80,200,.55), inset 0 -2px 5px rgba(0,0,0,.28);
+    animation: none;
+    transform-origin: 50% 50%;
+    transition: none;
+    transform: rotate(var(--qc-roll, 0rad));
+  }
+  /* 球上的一点高光，转起来才看得出在滚 */
+  .qc-bot[data-form="ball"] .qc-bot-body::after {
+    content: ''; position: absolute; left: 50%; top: 3px;
+    width: 4px; height: 4px; margin-left: -2px; border-radius: 50%;
+    background: rgba(255,255,255,.8);
+  }
+  .qc-bot[data-form="ball"] .qc-bot-head,
+  .qc-bot[data-form="ball"] .qc-bot-antenna,
+  .qc-bot[data-form="ball"] .qc-bot-tick,
+  .qc-bot[data-form="ball"] .qc-bot-bubble,
+  .qc-bot[data-form="ball"] .qc-pomo { opacity: 0 !important; }
+
   @keyframes qc-bot-breathe { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.04) } }
   @keyframes qc-bot-blink { 0%, 93%, 100% { transform: scaleY(1) } 96% { transform: scaleY(.1) } }
   @keyframes qc-bot-look {
@@ -957,6 +983,85 @@
     }, 540);
   }
 
+  /* ---------- 变成小球，滚过去再变回来 ---------- */
+  let rolling = false;
+  let rollOrigin = null;
+
+  function rollToXY(tx, ty) {
+    return new Promise((done) => {
+      if (!el) return done();
+      const from = el.getBoundingClientRect();
+      const dx = tx - from.left;
+      const dy = ty - from.top;
+      const dist = Math.hypot(dx, dy);
+      const dur = Math.max(300, Math.min(900, dist / 1.1));
+      const R = 12;   // 球半径，转过的弧度 = 位移 / 半径
+      const t0 = performance.now();
+
+      const step = (t) => {
+        if (!el) return done();
+        const p = Math.min(1, (t - t0) / dur);
+        const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+        el.style.left = from.left + dx * e + 'px';
+        el.style.top = from.top + dy * e + 'px';
+        el.style.setProperty('--qc-roll', (dist * e) / R + 'rad');
+        if (p < 1) requestAnimationFrame(step);
+        else done();
+      };
+      requestAnimationFrame(step);
+    });
+  }
+
+  /* 滚到某个矩形旁边（选区上方，贴顶就换到下方） */
+  async function rollTo(rect) {
+    if (!el || rolling || !rect) return false;
+    if (prefersReduced()) return false;
+
+    rolling = true;
+    const from = el.getBoundingClientRect();
+    rollOrigin = { left: from.left, top: from.top };
+
+    const w = from.width;
+    const h = from.height;
+    let tx = rect.left + rect.width / 2 - w / 2;
+    let ty = rect.top - h - 10;
+    if (ty < 8) ty = Math.min(window.innerHeight - h - 8, rect.bottom + 10);
+    tx = Math.max(8, Math.min(window.innerWidth - w - 8, tx));
+
+    el.dataset.form = 'ball';
+    el.dataset.busy = '1';
+
+    await rollToXY(tx, ty);
+
+    if (el) {
+      delete el.dataset.form;
+      delete el.dataset.busy;
+      el.style.removeProperty('--qc-roll');
+    }
+    rolling = false;
+    placeBubble();
+    hop();
+    return true;
+  }
+
+  /* 解释完了自己滚回原位 */
+  async function rollHome() {
+    if (!el || rolling || !rollOrigin) return;
+    const o = rollOrigin;
+    rollOrigin = null;
+    rolling = true;
+    el.dataset.form = 'ball';
+    el.dataset.busy = '1';
+    await rollToXY(o.left, o.top);
+    if (el) {
+      delete el.dataset.form;
+      delete el.dataset.busy;
+      el.style.removeProperty('--qc-roll');
+    }
+    rolling = false;
+    placeBubble();
+  }
+
   /* 连点三下及以上：不高兴，不解题 */
   function tripleTap() {
     if (!el) return;
@@ -1011,6 +1116,7 @@
   /* ---------- 拖拽 ---------- */
   function onDown(e) {
     if (!el) return;
+    if (el.dataset.busy === '1') return;   // 滚球动画期间不接受拖拽
     if (e.button != null && e.button !== 0) return;
     if (e.target && e.target.closest && e.target.closest('.qc-bot-bubble')) return;
 
@@ -1224,6 +1330,7 @@
       e.stopPropagation();
       e.preventDefault();
       if (suppressClick) return;
+      if (el && el.dataset.busy === '1') return;   // 正在滚过去，别打断
 
       // 刚被摸完头就被点一下：只当收手，别把「摸头」变成「解题」
       if (petting) { endPet(true); return; }
@@ -1461,5 +1568,5 @@
     return SKINS[(i + 1) % SKINS.length];
   }
 
-  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, wanderOnce: wander, setSkin, nextSkin, getEl: () => el, CSS, SKINS };
+  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, rollTo, rollHome, wanderOnce: wander, setSkin, nextSkin, getEl: () => el, CSS, SKINS };
 })();

@@ -261,6 +261,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === 'QC_OPTIONS') {
+    try {
+      chrome.runtime.openOptionsPage();
+      sendResponse({ ok: true });
+    } catch (e) {
+      sendResponse({ ok: false, error: String(e) });
+    }
+    return true;
+  }
+
   if (msg.type === 'QC_EXPLAIN') {
     (async () => {
       try {

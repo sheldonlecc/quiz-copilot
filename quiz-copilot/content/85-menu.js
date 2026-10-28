@@ -1,8 +1,7 @@
 /* ============================================================
  * 答题助手 QuizCopilot — 小机器人的右键菜单
  * 文件：content/85-menu.js
- * 说明：单击已经被「一键解题」占死，右键是第二个入口。
- *       菜单分三层：先动作、再自动化、最后外观；
+ * 说明：菜单只管「马上要做的事」，复杂的东西都挪进各自的窗口/设置页。
  *       开关类点完不关菜单，可以连着改好几项。
  * ============================================================ */
 (() => {
@@ -10,12 +9,11 @@
   const S = Q.S;
 
   const PAGE_LIMITS = [30, 50, 100];
-  const SKIN_CN = { blue: '经典蓝', mint: '薄荷绿', peach: '蜜桃粉', ink: '石墨灰' };
 
   const CSS = `
   .qc-menu {
     position: fixed; z-index: 2147483647;
-    min-width: 218px; max-width: 280px; padding: 6px;
+    min-width: 210px; max-width: 280px; padding: 6px;
     background: #1b1f28;
     border: 1px solid rgba(255,255,255,.12);
     border-radius: 11px;
@@ -40,7 +38,6 @@
   .qc-menu-row:disabled { opacity: .38; cursor: default; }
   .qc-menu-row.danger { color: #e5a3a3; }
   .qc-menu-row.danger:hover:not(:disabled) { background: rgba(248,113,113,.16); color: #ffd0d0; }
-  /* 主操作单独一层，颜色压过其他项 */
   .qc-menu-row.primary {
     padding: 9px 10px;
     background: linear-gradient(135deg, rgba(59,123,255,.3), rgba(91,91,240,.24));
@@ -60,7 +57,6 @@
   .qc-menu-row.primary .qc-menu-v { color: rgba(226,236,255,.78); }
   .qc-menu-row.primary:hover .qc-menu-v { color: #fff; }
 
-  /* 开关做成真的滑块，一眼能看出开没开 */
   .qc-menu-sw {
     width: 26px; height: 14px; border-radius: 7px; flex: 0 0 auto;
     background: #333845; position: relative; transition: background .16s;
@@ -80,7 +76,8 @@
   .qc-menu-sep { height: 1px; margin: 5px 6px; background: rgba(255,255,255,.08); }
 
   .qc-menu-chips { display: flex; align-items: center; gap: 4px; padding: 1px 9px 5px; }
-  .qc-menu-chip-k { font-size: 10.5px; color: #7f8a9c; flex: 0 0 auto; width: 26px; }  .qc-menu-chip {
+  .qc-menu-chip-k { font-size: 10.5px; color: #7f8a9c; flex: 0 0 auto; width: 26px; }
+  .qc-menu-chip {
     flex: 1 1 0; min-width: 0; padding: 4px 0;
     border-radius: 6px; cursor: pointer;
     font: inherit; font-size: 11.5px; color: #cfd6e2;
@@ -98,28 +95,6 @@
     border-color: rgba(120,165,255,.7);
     color: #fff; font-weight: 600;
   }
-
-  /* 自定义时长：一个数字框 + 专注/休息两个按钮 */
-  .qc-menu-custom { display: flex; align-items: center; gap: 4px; padding: 1px 9px 5px; }
-  .qc-menu-custom .qc-menu-chip-k { width: 34px; white-space: nowrap; }
-  .qc-menu-num {
-    width: 32px; flex: 0 0 auto; padding: 3px 2px; text-align: center;
-    background: rgba(255,255,255,.06);
-    border: 1px solid rgba(255,255,255,.12);
-    border-radius: 5px; color: #e8ecf3;
-    font: inherit; font-size: 11.5px; outline: none;
-  }
-  .qc-menu-num:focus { border-color: rgba(79,140,255,.62); background: rgba(79,140,255,.12); }
-  .qc-menu-unit { font-size: 10.5px; color: #7f8a9c; flex: 0 0 auto; }
-  .qc-menu-mini {
-    flex: 1 1 0; min-width: 0; padding: 4px 0;
-    border-radius: 6px; cursor: pointer;
-    font: inherit; font-size: 11px; color: #cfd6e2;
-    background: rgba(79,140,255,.14);
-    border: 1px solid rgba(79,140,255,.3);
-    transition: background .1s, color .1s;
-  }
-  .qc-menu-mini:hover { background: rgba(79,140,255,.3); color: #fff; }
   .qc-menu-hd {
     padding: 3px 9px 5px; font-size: 10.5px; color: #7f8a9c;
     display: flex; align-items: center; gap: 5px;
@@ -147,11 +122,8 @@
     const o = opts || {};
     const dis = o.disabled ? ' disabled' : '';
     let tail = '';
-    if (o.toggle) {
-      tail = `<span class="qc-menu-sw${o.on ? ' on' : ''}"><i></i></span>`;
-    } else if (value) {
-      tail = `<span class="qc-menu-v">${esc(value)}</span>`;
-    }
+    if (o.toggle) tail = `<span class="qc-menu-sw${o.on ? ' on' : ''}"><i></i></span>`;
+    else if (value) tail = `<span class="qc-menu-v">${esc(value)}</span>`;
     return (
       `<button class="qc-menu-row${o.primary ? ' primary' : ''}${o.danger ? ' danger' : ''}"` +
       ` data-act="${act}"${dis} role="menuitem">` +
@@ -177,27 +149,6 @@
     return `<div class="qc-menu-chips"><span class="qc-menu-chip-k">${esc(label)}</span>${btns}</div>`;
   }
 
-  function pomoChips(label, list, isBreak) {
-    const btns = list
-      .map((m) => `<button class="qc-menu-chip" data-pomo="${m}" data-break="${isBreak ? 1 : 0}">${m}</button>`)
-      .join('');
-    return `<div class="qc-menu-chips"><span class="qc-menu-chip-k">${esc(label)}</span>${btns}</div>`;
-  }
-
-  /* 预设之外还能自己填一个分钟数 */
-  function customPomoRow() {
-    const v = Math.max(1, Math.min(180, Number(S.pomoCustom) || 25));
-    return (
-      `<div class="qc-menu-custom">` +
-      `<span class="qc-menu-chip-k">自定义</span>` +
-      `<input class="qc-menu-num" type="text" inputmode="numeric" maxlength="3" value="${v}" data-custom-input>` +
-      `<span class="qc-menu-unit">分</span>` +
-      `<button class="qc-menu-mini" data-custom-start="0">专注</button>` +
-      `<button class="qc-menu-mini" data-custom-start="1">休息</button>` +
-      `</div>`
-    );
-  }
-
   function limits() {
     const cur = Number(S.pageLimit) || 30;
     return PAGE_LIMITS.indexOf(cur) >= 0 ? PAGE_LIMITS : PAGE_LIMITS.concat([cur]).sort((a, b) => a - b);
@@ -210,53 +161,31 @@
     const parts = [];
 
     if (running) {
-      parts.push(
-        `<div class="qc-menu-hd"><span class="qc-menu-dot"></span>正在连做 · 第 ${chain.pages} 页</div>`
-      );
-    }
-    if (pomo && pomo.running) {
-      parts.push(
-        `<div class="qc-menu-hd"><span class="qc-menu-dot pause"></span>${esc(pomo.label)} · ${esc(pomo.left)}</div>`
-      );
+      parts.push(`<div class="qc-menu-hd"><span class="qc-menu-dot"></span>正在连做 · 第 ${chain.pages} 页</div>`);
     }
 
-    /* 一、动作：点完就关 */
+    /* 一、马上要做的事 */
     parts.push(row('solve', running ? '重新做这一页' : '一键解题', 'Alt+Shift+Q', { primary: true }));
     parts.push(row('panel', '打开面板', 'Alt+Q'));
-    parts.push(
-      row('fill', '填入页面', '', {
-        disabled: !(S.questions && S.questions.some((q) => q.answer))
-      })
-    );
 
-    /* 二、自动化：点完不关，可以连着改 */
+    /* 二、两个开关 */
     parts.push(sep());
     parts.push(sec('自动化'));
     parts.push(row('auto', '自动填', '', { toggle: true, on: !!S.autoFill }));
     parts.push(row('autopage', '自动翻页', '', { toggle: true, on: !!S.autoPage }));
-    if (S.autoPage) {
-      parts.push(chipRow('页数', limits(), Number(S.pageLimit) || 30, 'limit'));
-    }
+    if (S.autoPage) parts.push(chipRow('页数', limits(), Number(S.pageLimit) || 30, 'limit'));
 
-    /* 三、工具 */
+    /* 三、窗口与设置 */
     parts.push(sep());
-    parts.push(sec('工具'));
-    parts.push(row('explain', '划词解释', '', { toggle: true, on: S.selExplain !== false }));
-    if (pomo && pomo.running) {
-      parts.push(row('pomo-stop', '结束' + pomo.label, pomo.left));
-    } else {
-      parts.push(pomoChips('专注', (Q.pomo && Q.pomo.FOCUS_MIN) || [15, 25, 45, 60], false));
-      parts.push(pomoChips('休息', (Q.pomo && Q.pomo.BREAK_MIN) || [5, 10, 15], true));
-      parts.push(customPomoRow());
-    }
-
-    /* 四、外观 */
-    parts.push(sep());
-    parts.push(sec('小机器人'));
-    const el = Q.mascot && Q.mascot.getEl ? Q.mascot.getEl() : null;
-    const skin = el ? el.dataset.skin || 'blue' : 'blue';
-    parts.push(row('skin', '换皮肤', SKIN_CN[skin] || '经典蓝'));
-    parts.push(row('hide', '隐藏小机器人', '设置里可开', { danger: true }));
+    parts.push(
+      row(
+        'pomo',
+        '番茄钟',
+        pomo && pomo.running ? `${pomo.label} ${pomo.left}` : '打开'
+      )
+    );
+    parts.push(row('options', '更多设置', '皮肤 / 划词…'));
+    parts.push(row('hide', '隐藏小机器人', '', { danger: true }));
 
     return parts.join('');
   }
@@ -274,16 +203,6 @@
       });
     });
 
-    el.querySelectorAll('[data-pomo]').forEach((b) => {
-      b.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const min = Number(b.getAttribute('data-pomo'));
-        const isBreak = b.getAttribute('data-break') === '1';
-        close();
-        if (Q.pomo) Q.pomo.start(min, isBreak);
-      });
-    });
-
     el.querySelectorAll('[data-chip="limit"]').forEach((b) => {
       b.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -296,47 +215,6 @@
         refresh();
       });
     });
-
-    const inp = el.querySelector('[data-custom-input]');
-    if (inp) {
-      inp.addEventListener('input', () => {
-        inp.value = inp.value.replace(/[^\d]/g, '').slice(0, 3);
-      });
-      inp.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          e.stopPropagation();
-          startCustom(false);
-        }
-      });
-      inp.addEventListener('change', () => {
-        const v = clampMinutes(inp.value);
-        S.pomoCustom = v;
-        inp.value = String(v);
-        try { chrome.storage.sync.set({ pomoCustom: v }); } catch (err) {}
-      });
-    }
-
-    el.querySelectorAll('[data-custom-start]').forEach((b) => {
-      b.addEventListener('click', (e) => {
-        e.stopPropagation();
-        startCustom(b.getAttribute('data-custom-start') === '1');
-      });
-    });
-  }
-
-  function clampMinutes(raw) {
-    return Math.max(1, Math.min(180, Math.round(Number(raw)) || 25));
-  }
-
-  /* 用输入框里的分钟数开始一段专注 / 休息 */
-  function startCustom(isBreak) {
-    const inp = menuEl && menuEl.querySelector('[data-custom-input]');
-    const v = clampMinutes(inp ? inp.value : S.pomoCustom);
-    S.pomoCustom = v;
-    try { chrome.storage.sync.set({ pomoCustom: v }); } catch (e) {}
-    close();
-    if (Q.pomo) Q.pomo.start(v, isBreak);
   }
 
   /* 重画内容但不关菜单；高度变了就往上顶，别让菜单在脚下乱跳 */
@@ -427,10 +305,6 @@
       if (Q.oneKeyFlow) Q.oneKeyFlow({ from: 'menu', redo: true });
       return false;
     }
-    if (act === 'fill') {
-      if (Q.fillAll) Q.fillAll();
-      return false;
-    }
     if (act === 'panel') {
       if (Q.openPanel) Q.openPanel();
       if (Q.render) Q.render();
@@ -441,13 +315,7 @@
       if (Q.setAutoFill) Q.setAutoFill(!S.autoFill);
       else S.autoFill = !S.autoFill;
       if (Q.render) Q.render();
-      if (bot) {
-        bot.say(
-          S.autoFill ? '自动填：开' : '自动填：关（自动翻页也跟着关了）',
-          1800,
-          false
-        );
-      }
+      if (bot) bot.say(S.autoFill ? '自动填：开' : '自动填：关（自动翻页也跟着关了）', 1800, false);
       return true;
     }
 
@@ -455,37 +323,26 @@
       if (Q.setAutoPage) Q.setAutoPage(!S.autoPage);
       else S.autoPage = !S.autoPage;
       if (Q.render) Q.render();
-      if (bot) {
-        bot.say(S.autoPage ? '连做模式：开，点我就一路做到底' : '自动翻页：关', 2000, false);
-      }
+      if (bot) bot.say(S.autoPage ? '连做模式：开，点我就一路做到底' : '自动翻页：关', 2000, false);
       return true;
     }
 
-    if (act === 'explain') {
-      S.selExplain = S.selExplain === false;
-      try { chrome.storage.sync.set({ selExplain: S.selExplain }); } catch (e) {}
-      if (!S.selExplain && Q.sel && Q.sel.hide) Q.sel.hide();
-      if (bot) bot.say(S.selExplain ? '选一段字，我来讲' : '划词解释关掉了', 1800, false);
-      return true;
-    }
-
-    if (act === 'pomo-stop') {
-      if (Q.pomo) Q.pomo.stop(true);
+    if (act === 'pomo') {
+      if (Q.pomoWin) Q.pomoWin.open();
       return false;
     }
 
-    if (act === 'skin') {
-      if (!bot || !bot.nextSkin) return false;
-      const next = bot.nextSkin();
-      bot.setSkin(next);
-      try { chrome.storage.sync.set({ botSkin: next }); } catch (e) {}
-      bot.say('换成' + (SKIN_CN[next] || next), 1500, false);
-      return true;
+    if (act === 'options') {
+      try {
+        chrome.runtime.sendMessage({ type: 'QC_OPTIONS' });
+      } catch (e) {}
+      return false;
     }
 
     if (act === 'hide') {
       try { chrome.storage.sync.set({ showFab: false }); } catch (e) {}
       if (Q.closePanel) Q.closePanel();
+      if (Q.pomoWin) Q.pomoWin.close();
       return false;
     }
 

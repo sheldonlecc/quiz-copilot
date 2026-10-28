@@ -22,6 +22,8 @@
 
   function openPanel() {
     ensureHost();
+    // 右上角只放一个窗口：开面板就收起番茄窗
+    if (Q.pomoWin && Q.pomoWin.isOpen && Q.pomoWin.isOpen()) Q.pomoWin.close();
     if (S.panelEl && S.panelEl.isConnected) {
       S.panelEl.style.display = 'flex';
       render();

@@ -68,8 +68,9 @@
       e.preventDefault();
       e.stopPropagation();
       const text = pendingText;
+      const rect = pendingRect;
       hide();
-      if (text) explain(text);
+      if (text) explain(text, rect);
     });
     S.shadow.appendChild(el);
     chip = el;
@@ -77,9 +78,11 @@
   }
 
   let pendingText = '';
+  let pendingRect = null;
 
   function hide() {
     pendingText = '';
+    pendingRect = null;
     if (chip) chip.dataset.show = '0';
   }
 
@@ -87,6 +90,7 @@
     const el = ensureChip();
     if (!el || !rect) return;
     pendingText = text;
+    pendingRect = rect;
     el.dataset.show = '1';
 
     // 先量宽高再定位，避免超出版心
@@ -153,13 +157,22 @@
     }, 180);
   }
 
-  async function explain(text) {
+  async function explain(text, rect) {
     Q.ensureHost();
+    const bot = Q.mascot;
+
+    // 先变成球滚到选中的那段话旁边，落地再开始解释
+    if (bot && bot.rollTo && rect) {
+      try {
+        await bot.rollTo(rect);
+        bot.say('这段我看看…', 1500, false);
+      } catch (e) {}
+    }
+
     S.explain = { src: text, body: '', loading: true, error: '' };
     Q.openPanel();
     Q.render();
 
-    const bot = Q.mascot;
     if (bot && bot.getState() === 'idle') {
       bot.setState('thinking');
       bot.say('正在看这段…', 0, false);
@@ -183,6 +196,9 @@
       }
     }
     Q.render();
+
+    // 解释完了自己滚回原位，别一直挡着正文
+    if (bot && bot.rollHome) setTimeout(() => bot.rollHome(), 1600);
   }
 
   function init() {

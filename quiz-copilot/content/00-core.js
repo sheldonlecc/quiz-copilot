@@ -32,6 +32,7 @@
     autoPage: false,
     pageLimit: 30,
     pomoCustom: 25,
+    chatLevel: 2,
     showFab: true,
     diag: '',
     lastUsage: null,
