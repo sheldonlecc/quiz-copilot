@@ -258,7 +258,9 @@
   /* ---------------- 提示词 ---------------- */
 
   function buildCodePrompt(q) {
-    const lang = q.forceLang || q.lang || guessLang(q.template) || '';
+    /* 语言跟着编辑器模板走：在页面上切语言时，编辑器会换成对应语言的模板，
+       guessLang 自然就跟着变了，不需要再手动指定。页面语言只在模板读不到时兜底。 */
+    const lang = q.lang || guessLang(q.template) || q.pageLang || '';
     const lines = [
       '这是一道在线判题平台的编程题，请给出完整解法。',
       '',
@@ -266,8 +268,6 @@
       q.stem,
       ''
     ];
-
-    if (q.forceLang) lines.push(`请用 ${q.forceLang} 写这道题（用别的不算）。`, '');
 
     const tpl = String(q.template || '').trim();
     if (tpl) {
@@ -468,7 +468,8 @@
       if (full.code.trim().length >= prev.trim().length) q.template = full.code;
       if (!q.lang) q.lang = guessLang(q.template);
     }
-    q.pageLang = readPageLang() || '';
+    // 模板能看出语言就不用再扫页面；扫这一眼只给「模板读不到」兜底
+    if (!q.lang) q.pageLang = readPageLang() || '';
 
     const resp = await Q.sendBg({ type: 'QC_CODE', text: buildCodePrompt(q) });
     if (!resp || !resp.ok) throw new Error((resp && resp.error) || '调用失败');
@@ -476,7 +477,7 @@
     const r = parseCodeReply(resp.text || '');
     q.answer = r.code;
     q.reason = r.reason;
-    q.codeLang = r.lang || q.forceLang || q.lang || '';
+    q.codeLang = r.lang || q.lang || q.pageLang || '';
     q.fillState = '';
     if (resp.usage && Q.S) Q.S.lastUsage = resp.usage;
     return r;

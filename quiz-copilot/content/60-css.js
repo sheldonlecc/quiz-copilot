@@ -218,25 +218,6 @@
     font-size: 11px; line-height: 1.55; color: #d7e3f4;
     white-space: pre; tab-size: 2;
   }
-  /* 换语言重写：几个小胶囊，不占地方 */
-  .qc-code-langs { display: flex; gap: 5px; margin-top: 6px; }
-  .qc-chip {
-    font-family: inherit;
-    font-size: 10.5px; color: #8fb6e6; background: rgba(79,140,255,.1);
-    border: 1px solid rgba(79,140,255,.24); border-radius: 999px;
-    padding: 1px 9px; line-height: 16px; cursor: pointer;
-    transition: background .16s, color .16s, border-color .16s, transform .16s cubic-bezier(.34,1.56,.64,1);
-  }
-  .qc-chip:hover { background: rgba(79,140,255,.2); color: #cfe0ff; }
-  .qc-chip:active { transform: scale(.94); }
-  .qc-chip.on { color: #0b1220; background: #9dc0ff; border-color: #9dc0ff; font-weight: 600; }
-  .qc-chip:disabled { opacity: .55; cursor: default; }
-  .qc-code-warn {
-    font-size: 11px; line-height: 1.5; color: #e3bd76;
-    background: rgba(251,191,36,.08); border: 1px solid rgba(251,191,36,.3);
-    border-radius: 7px; padding: 5px 8px; margin-bottom: 6px;
-  }
-  .qc-code-warn b { color: #ffd98a; }
   .qc-reason.pre { white-space: pre-line; }
   .qc-stem.open {
     display: block; -webkit-line-clamp: unset;

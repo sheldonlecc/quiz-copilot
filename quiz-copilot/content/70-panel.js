@@ -23,34 +23,14 @@
 
   const clampNum = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  /* 编程题：思路一行字，代码一整块，能滚能复制；换语言重写就地点 */
-  const CODE_LANGS = ['C++', 'Python', 'Java'];
-
+  /* 编程题：思路一行字，代码一整块，能滚能复制 */
   function codeBand(q) {
     const code = String(q.answer || '');
-    const lang = esc(q.codeLang || q.forceLang || q.lang || '代码');
-    const busy = !!q.solving;
-
-    const chips = CODE_LANGS.map(
-      (l) =>
-        `<button class="qc-chip ${q.forceLang === l ? 'on' : ''}" data-act="code-lang" data-lang="${l}" data-idx="${q.index}"${
-          busy ? ' disabled' : ''
-        }>${l}</button>`
-    ).join('');
-
-    // 页面选的语言和这份代码的语言不一致 —— 写进去大概率编译不过，先提醒
-    const mismatch =
-      q.pageLang && q.codeLang && q.pageLang !== q.codeLang
-        ? `<div class="qc-code-warn">页面选的是 <b>${esc(q.pageLang)}</b>，这份代码是 <b>${esc(
-            q.codeLang
-          )}</b>。先在页面上把语言切过来，或点下面的语言按钮重写。</div>`
-        : '';
+    const lang = esc(q.codeLang || q.lang || '代码');
 
     if (!code) {
       return `<div class="qc-code empty">
-        <div class="qc-code-meta"><span class="qc-code-lang">${lang}</span><span>${busy ? '重写中…' : '还没生成'}</span></div>
-        ${mismatch}
-        <div class="qc-code-langs">${chips}</div>
+        <div class="qc-code-meta"><span class="qc-code-lang">${lang}</span><span>还没生成</span></div>
       </div>`;
     }
 
@@ -58,12 +38,10 @@
     return `<div class="qc-code">
       <div class="qc-code-meta">
         <span class="qc-code-lang">${lang}</span>
-        <span>${lines} 行 · ${code.length} 字符${busy ? ' · 重写中…' : ''}</span>
+        <span>${lines} 行 · ${code.length} 字符</span>
         <button class="qc-mini" data-act="copy-code" data-idx="${q.index}">复制代码</button>
       </div>
-      ${mismatch}
       <pre class="qc-code-pre">${esc(code)}</pre>
-      <div class="qc-code-langs">${chips}</div>
     </div>`;
   }
 
@@ -439,34 +417,6 @@
         q.stemOpen = !q.stemOpen;
         render();
       }
-      return;
-    }
-
-    if (act === 'code-lang') {
-      const q = S.questions.find((x) => x.index === idx);
-      const lang = e.currentTarget.getAttribute('data-lang');
-      if (!q || !lang || q.solving) return;
-      if (!Q.solveCodeQ) {
-        setStatus('编程题模块没加载，重新加载扩展再试。', 'warn');
-        render();
-        return;
-      }
-      q.forceLang = lang;
-      q.solving = true;
-      setStatus(`第 ${idx} 题：正在用 ${lang} 重写…`, 'busy');
-      render();
-      Q.solveCodeQ(q).then(
-        () => {
-          q.solving = false;
-          setStatus(`第 ${idx} 题：已用 ${lang} 重写，点「写入编辑器」替换掉旧的。`, 'ok');
-          render();
-        },
-        (err) => {
-          q.solving = false;
-          setStatus(`第 ${idx} 题重写失败：${String((err && err.message) || err).slice(0, 60)}`, 'warn');
-          render();
-        }
-      );
       return;
     }
 
