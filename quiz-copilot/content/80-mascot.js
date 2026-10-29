@@ -498,7 +498,7 @@
   }
   .qc-bot[data-travel="car"] .qc-car { opacity: 1; }
   .qc-bot[data-travel="car"] .qc-car-w1,
-  .qc-bot[data-travel="car"] .qc-car-w2 { animation: qc-wheel .3s linear infinite; }
+  .qc-bot[data-travel="car"] .qc-car-w2 { animation: qc-wheel .42s linear infinite; }
   @keyframes qc-wheel { 0% { transform: rotate(0) } 100% { transform: rotate(360deg) } }
 
   /* ---- 纸飞机 ---- */
@@ -531,9 +531,9 @@
     box-shadow: 0 0 4px rgba(246,211,101,.8);
   }
   .qc-bot[data-travel="portal"] .qc-door { opacity: 1; }
-  .qc-bot[data-travel="portal"][data-tph="1"] .qc-door { animation: qc-door-pop .34s ease-out; }
-  .qc-bot[data-travel="portal"][data-tph="1"] .qc-door-panel { animation: qc-door-swing .34s ease-in both; }
-  .qc-bot[data-travel="portal"][data-tph="2"] .qc-door { animation: qc-door-leave .56s ease-out both; }
+  .qc-bot[data-travel="portal"][data-tph="1"] .qc-door { animation: qc-door-pop .42s ease-out; }
+  .qc-bot[data-travel="portal"][data-tph="1"] .qc-door-panel { animation: qc-door-swing .42s ease-in both; }
+  .qc-bot[data-travel="portal"][data-tph="2"] .qc-door { animation: qc-door-leave .66s ease-out both; }
   .qc-bot[data-travel="portal"][data-tph="2"] .qc-door-panel { transform: rotateY(-72deg); }
 
   @keyframes qc-door-pop {
@@ -565,8 +565,8 @@
   .qc-spark i:nth-child(4) { --a: 180deg; }
   .qc-spark i:nth-child(5) { --a: 240deg; }
   .qc-spark i:nth-child(6) { --a: 300deg; }
-  .qc-bot[data-travel="magic"][data-tph="1"] .qc-spark i { animation: qc-spark-out .46s ease-out both; }
-  .qc-bot[data-travel="magic"][data-tph="2"] .qc-spark i { animation: qc-spark-in .52s ease-out both; }
+  .qc-bot[data-travel="magic"][data-tph="1"] .qc-spark i { animation: qc-spark-out .55s ease-out both; }
+  .qc-bot[data-travel="magic"][data-tph="2"] .qc-spark i { animation: qc-spark-in .62s ease-out both; }
 
   @keyframes qc-spark-out {
     0% { opacity: 0; transform: rotate(calc(45deg + var(--a))) translateX(2px) scale(.3); }
@@ -585,7 +585,7 @@
     border: 2px solid rgba(160,205,255,.95);
     box-shadow: 0 0 12px rgba(120,180,255,.6), inset 0 0 8px rgba(120,180,255,.4);
   }
-  .qc-bot[data-travel="blink"][data-tph="2"] .qc-ring { animation: qc-ring .5s ease-out both; }
+  .qc-bot[data-travel="blink"][data-tph="2"] .qc-ring { animation: qc-ring .62s ease-out both; }
 
   @keyframes qc-ring {
     0% { opacity: 0; transform: scale(.25); }
@@ -596,12 +596,12 @@
   /* 车和飞机出场时把本体藏起来 */
   .qc-bot[data-travel="car"] .qc-bot-body,
   .qc-bot[data-travel="plane"] .qc-bot-body { opacity: 0; transform: scale(.55); }
-  .qc-bot[data-travel="portal"] .qc-bot-body { animation: qc-body-in-door .46s ease-in both; }
-  .qc-bot[data-travel="portal"][data-tph="2"] .qc-bot-body { animation: qc-body-out-door .56s cubic-bezier(.34,1.4,.64,1) both; }
-  .qc-bot[data-travel="magic"] .qc-bot-body { animation: qc-body-poof .46s ease-in both; }
-  .qc-bot[data-travel="magic"][data-tph="2"] .qc-bot-body { animation: qc-body-appear .52s cubic-bezier(.34,1.5,.64,1) both; }
-  .qc-bot[data-travel="blink"] .qc-bot-body { animation: qc-body-blink-out .2s ease-in both; }
-  .qc-bot[data-travel="blink"][data-tph="2"] .qc-bot-body { animation: qc-body-blink-in .3s ease-out both; }
+  .qc-bot[data-travel="portal"] .qc-bot-body { animation: qc-body-in-door .55s ease-in both; }
+  .qc-bot[data-travel="portal"][data-tph="2"] .qc-bot-body { animation: qc-body-out-door .68s cubic-bezier(.34,1.4,.64,1) both; }
+  .qc-bot[data-travel="magic"] .qc-bot-body { animation: qc-body-poof .55s ease-in both; }
+  .qc-bot[data-travel="magic"][data-tph="2"] .qc-bot-body { animation: qc-body-appear .62s cubic-bezier(.34,1.5,.64,1) both; }
+  .qc-bot[data-travel="blink"] .qc-bot-body { animation: qc-body-blink-out .28s ease-in both; }
+  .qc-bot[data-travel="blink"][data-tph="2"] .qc-bot-body { animation: qc-body-blink-in .4s ease-out both; }
 
   @keyframes qc-body-in-door {
     0% { opacity: 1; transform: scale(1) translateY(0); }
@@ -1715,8 +1715,8 @@
       const dx = tx - from.left;
       const dy = ty - from.top;
       const dist = Math.hypot(dx, dy);
-      // 0.5px/ms 左右：600px 大概滚 1.2 秒，别像弹射一样
-      const dur = Math.max(450, Math.min(1400, dist / 0.5));
+      // 0.42px/ms 左右：600px 大概 1.4 秒，慢一点更像「走过去」而不是弹过去
+      const dur = Math.max(560, Math.min(1800, dist / 0.42));
       const R = 17;   // 球半径，转过的弧度 = 位移 / 半径
       // 往左滚就逆时针，往右滚就顺时针；竖着走用纵向位移给一点滚动感
       const axis = Math.abs(dx) >= Math.abs(dy) ? dx : dy * 0.9;
@@ -1833,11 +1833,12 @@
 
     /* ② 开车：直线，一路小颠 */
     if (mode === 'car') {
-      const dur = Math.max(520, Math.min(1600, dist / 0.55));
+      // 0.36px/ms：600px 约 1.7 秒，急加速容易显得慌
+      const dur = Math.max(760, Math.min(2400, dist / 0.36));
       await tween(dur, (p) => {
         const e = easeInOut(p);
         setPos(from.left + dx * e, from.top + dy * e);
-        if (el) el.style.setProperty('--qc-bump', (Math.sin(p * Math.PI * 9) * 1.6).toFixed(2) + 'px');
+        if (el) el.style.setProperty('--qc-bump', (Math.sin(p * Math.PI * 6) * 1.6).toFixed(2) + 'px');
       });
       if (el) {
         delete el.dataset.travel;
@@ -1849,7 +1850,8 @@
 
     /* ③ 纸飞机：走一条向上的弧线，机身跟着切线转 */
     if (mode === 'plane') {
-      const dur = Math.max(680, Math.min(1900, dist / 0.45));
+      // 0.3px/ms：比车再慢一点，滑翔感才出得来
+      const dur = Math.max(950, Math.min(2800, dist / 0.3));
       const mx = (from.left + tx) / 2;
       const my = Math.min(from.top, ty) - Math.min(150, 50 + dist * 0.3);
       await tween(dur, (p) => {
@@ -1871,14 +1873,14 @@
 
     /* ④⑤⑥ 任意门 / 魔法 / 瞬移：原地消失 → 瞬移 → 目的地出现 */
     el.dataset.tph = '1';
-    await wait(mode === 'blink' ? 210 : 470);
+    await wait(mode === 'blink' ? 300 : 560);
     setPos(tx, ty);
     if (el) {
       delete el.dataset.tph;
       void el.offsetWidth; // 强制重排，第二段动画才会重新播
       el.dataset.tph = '2';
     }
-    await wait(mode === 'blink' ? 480 : 580);
+    await wait(mode === 'blink' ? 620 : 720);
     if (el) {
       delete el.dataset.tph;
       delete el.dataset.travel;
