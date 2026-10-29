@@ -52,7 +52,12 @@
       if (!qs.length) {
         bot.setState('error');
         // 气泡只说结论，具体原因放在面板里，别把一整段诊断塞进气泡
-        bot.say('这页没认出题目，点这里看原因', 9000, true);
+        const kind = Q.pageKind ? Q.pageKind() : 'generic';
+        bot.say(
+          kind === 'code-judge' ? '这页是编程题，我填不了' : '这页没认出题目，点这里看原因',
+          9000,
+          true
+        );
         bot.settleAfter(10000);
         return;
       }
