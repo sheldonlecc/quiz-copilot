@@ -9,6 +9,18 @@
   const setStatus = (...a) => Q.setStatus(...a);
   const render = (...a) => Q.render(...a);
   const solve = (...a) => Q.solve(...a);
+  /* 页面上有没有代码编辑器（LeetCode / 牛客 / 洛谷那种判题页） */
+  function hasCodeEditor() {
+    const sel = Q.CODE_EDITOR_SEL;
+    if (!sel) return false;
+    try {
+      for (const doc of allDocs()) {
+        if (doc.querySelector && doc.querySelector(sel)) return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
   /* 判断当前是答题页还是"已交卷的回看页"，两者行为完全不同 */
   function pageKind() {
     const href = String(location.href);
@@ -16,6 +28,7 @@
     if (/\/mod\/quiz\/attempt\.php/i.test(href)) return 'moodle-attempt';
     if (/\/course\/view\.php/i.test(href)) return 'moodle-course';
     if (/\/mod\/quiz\//i.test(href)) return 'moodle-quiz';
+    if (hasCodeEditor()) return 'code-judge';
     return 'generic';
   }
 
@@ -24,6 +37,7 @@
     'moodle-attempt': 'Moodle 答题页（attempt.php）',
     'moodle-course': 'Moodle 课程页（course/view.php，活动列表）',
     'moodle-quiz': 'Moodle 测验页面',
+    'code-judge': '编程题页面（有代码编辑器）',
     generic: '普通页面'
   };
 
@@ -35,6 +49,9 @@
     }
     if (kind === 'moodle-course') {
       return '这是课程的「活动列表」页，不是测验页——这里只有学习任务，没有题目。请点进标着 Quiz 的那一项，进入 attempt.php 再读。';
+    }
+    if (kind === 'code-judge') {
+      return '这页是编程题：答案是写进右边代码编辑器的一段代码，不是填空或选择，我填不进去。想让我帮忙的话，选中题目文字用「解释这段」讲思路。';
     }
     let raw = 0;
     let ok = 0;
@@ -223,5 +240,5 @@
   }
 
 
-  Object.assign(Q, { pageKind, KIND_TEXT, noQuestionHint, diagnose, describeEl, finalize, extractAll, extractFromSelection });
+  Object.assign(Q, { pageKind, hasCodeEditor, KIND_TEXT, noQuestionHint, diagnose, describeEl, finalize, extractAll, extractFromSelection });
 })();

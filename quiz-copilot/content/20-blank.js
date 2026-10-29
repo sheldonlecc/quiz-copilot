@@ -15,6 +15,25 @@
   // 明显不是答题框的关键词
   const NOT_QUIZ_SIG =
     /(search|keyword|query|captcha|passw|pwd|email|mail|phone|mobile|username|nickname|comment|message|feedback|verif|address|company|dept|studentno|idcard)/i;
+
+  /* 代码编辑器（LeetCode / 牛客 / 洛谷这类）：里面的输入框一律不是答题空。
+     Monaco 藏着一个 <textarea class="inputarea">，CodeMirror 6 的 .cm-content 还是
+     contenteditable —— 不拦住的话前者会被当成填空、后者会被当成论述题。 */
+  const CODE_EDITOR_SEL =
+    '.monaco-editor, .monaco-diff-editor, .cm-editor, .CodeMirror, .CodeMirror-code, .ace_editor';
+
+  function inCodeEditor(el) {
+    if (!el || !el.closest) return false;
+    try {
+      if (el.closest(CODE_EDITOR_SEL)) return true;
+      const doc = el.ownerDocument || document;
+      if (doc !== document) {
+        const fe = doc.defaultView && doc.defaultView.frameElement;
+        if (fe && fe.closest && fe.closest(CODE_EDITOR_SEL)) return true;
+      }
+    } catch (e) {}
+    return false;
+  }
   const NOT_QUIZ_CN =
     /(搜索|邮箱|手机|密码|验证码|用户名|登录|昵称|留言|评论|反馈|订阅|姓名|名字|学号|工号|身份证|地址|公司|单位|职务|部门|性别|年龄|出生)/;
 
@@ -43,6 +62,8 @@
     } else if (!isTextarea && !editable) {
       return { ok: false, why: '不是文本控件' };
     }
+
+    if (inCodeEditor(el)) return { ok: false, why: '在代码编辑器里' };
 
     if (!isVisible(el)) return { ok: false, why: '不可见' };
 
@@ -361,6 +382,7 @@
     if (!el || !el.isConnected) return false;
     if (el.disabled || el.readOnly) return false;
     if (!el.isContentEditable && el.tagName !== 'TEXTAREA') return false;
+    if (inCodeEditor(el)) return false;   // CodeMirror 的 contenteditable 不是论述题
 
     const anchor = editorAnchor(el);
     if (anchor === null && (el.ownerDocument || document) !== document) return false;
@@ -606,5 +628,5 @@
     return essays.concat(out);
   }
 
-  Object.assign(Q, { NOT_QUIZ_SIG, NOT_QUIZ_CN, ANSWER_LABEL, PERSONAL_ID, checkFillable, isQuizFillable, nearbyLabelText, collectCandidates, looksLikeQuestion, blankContainer, stemWithBlanks, groupTable, matrixInfo, stemWithoutTables, tableContainer, extractBlanks, extractEssays, essayCandidates, essayWordHint, essayStem, questionTextBefore, editorLike, ESSAY_HINT });
+  Object.assign(Q, { NOT_QUIZ_SIG, NOT_QUIZ_CN, CODE_EDITOR_SEL, inCodeEditor, ANSWER_LABEL, PERSONAL_ID, checkFillable, isQuizFillable, nearbyLabelText, collectCandidates, looksLikeQuestion, blankContainer, stemWithBlanks, groupTable, matrixInfo, stemWithoutTables, tableContainer, extractBlanks, extractEssays, essayCandidates, essayWordHint, essayStem, questionTextBefore, editorLike, ESSAY_HINT });
 })();
