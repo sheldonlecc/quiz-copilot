@@ -139,6 +139,17 @@ quiz-copilot/
 
 改完代码在扩展页点 ↻，刷新页面即可。
 
+### 改完先自查
+
+两个脚本，都不需要装依赖：
+
+```bash
+node _gencodecheck.js   # 逻辑断言：读题、提示词、回复解析、通道分流（33 条）
+node _runharness.js     # UI 回归：无头 Chrome 打开 _test-harness.html（140 条）
+```
+
+`_runharness.js` 会先用 `_gentest.js` 重新生成测试页，再驱动 Chrome 跑一遍，只打印 PASS / FAIL，退出码 0 表示全过。改 JS/CSS 之前跑一次，能省掉「reload 扩展、刷新页面、手点一遍」的来回。
+
 ### 改版本号时必须补日志
 
 `manifest.json` 的 `version` 一升，就在 [CHANGELOG.md](CHANGELOG.md) 顶部加一条，分组写：

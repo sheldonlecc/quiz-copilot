@@ -449,9 +449,9 @@
 
   const COPY_HINT = { plain: '只答案', reason: '带解析', md: 'Markdown' };
 
-  function copyAll() {
-    if (!S.questions.length) return;
-    const fmt = S.copyFormat || 'plain';
+  /* 按指定格式拼出「复制答案」的文本，单独放出来才好测 */
+  function formatAll(fmt) {
+    if (!S.questions.length) return '';
     let text = '';
 
     if (fmt === 'md') {
@@ -477,7 +477,12 @@
       text = S.questions.map((q) => `第${q.index}题：${answerDisplay(q)}`).join('\n');
     }
 
-    copyText(text);
+    return text;
+  }
+
+  function copyAll() {
+    if (!S.questions.length) return;
+    copyText(formatAll(S.copyFormat || 'plain'));
   }
 
   function copyText(text) {
@@ -508,5 +513,5 @@
   }
 
 
-  Object.assign(Q, { ensureHost, openPanel, closePanel, togglePanel, setStatus, render, onAct, copyAll, copyText, fallbackCopy, makeDraggable, applySavedPos });
+  Object.assign(Q, { ensureHost, openPanel, closePanel, togglePanel, setStatus, render, onAct, copyAll, formatAll, copyText, fallbackCopy, makeDraggable, applySavedPos });
 })();
