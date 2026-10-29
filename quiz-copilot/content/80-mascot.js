@@ -455,6 +455,185 @@
     box-shadow: 0 0 6px rgba(255,255,255,.6);
   }
 
+  /* ============================================================
+   * 赶路方式：滚 / 开车 / 纸飞机 / 任意门 / 魔法 / 瞬移
+   * 道具都是 .qc-bot 的直接子元素（和 .qc-ball 同级），
+   * 这样才能脱离 body 的呼吸/歪头变换，独立摆位
+   * ============================================================ */
+  .qc-car, .qc-plane, .qc-door, .qc-spark, .qc-ring {
+    position: absolute; left: 50%; top: 50%;
+    opacity: 0; pointer-events: none; z-index: 2;
+  }
+  /* 变形/传送途中不显示头顶计时牌，免得挂在车顶上 */
+  .qc-bot[data-travel] .qc-pomo { opacity: 0 !important; }
+
+  /* ---- 小汽车 ---- */
+  .qc-car {
+    width: 40px; height: 24px; margin: -16px 0 0 -20px;
+    transform: translateY(var(--qc-bump, 0px));
+  }
+  .qc-car-body {
+    position: absolute; left: 0; bottom: 4px; width: 40px; height: 12px;
+    border-radius: 5px 10px 4px 4px;
+    background: linear-gradient(160deg, #ff9a66, #e0512c);
+    box-shadow: 0 3px 8px rgba(180,60,20,.38), inset 0 1px 0 rgba(255,255,255,.45);
+  }
+  .qc-car-cab {
+    position: absolute; left: 9px; bottom: 14px; width: 21px; height: 8px;
+    border-radius: 7px 7px 2px 2px;
+    background: linear-gradient(160deg, #ffe0cc, #ffab84);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+  }
+  .qc-car-w1, .qc-car-w2 {
+    position: absolute; bottom: 0; width: 9px; height: 9px; border-radius: 50%;
+    background: radial-gradient(circle at 38% 34%, #6b7280, #262c39 72%);
+    box-shadow: 0 1px 3px rgba(0,0,0,.35);
+  }
+  .qc-car-w1 { left: 5px; }
+  .qc-car-w2 { right: 6px; }
+  .qc-car-w1::after, .qc-car-w2::after {
+    content: ''; position: absolute; left: 50%; top: 1.6px;
+    width: 1.6px; height: 5.8px; margin-left: -.8px; border-radius: 1px;
+    background: rgba(255,255,255,.6);
+  }
+  .qc-bot[data-travel="car"] .qc-car { opacity: 1; }
+  .qc-bot[data-travel="car"] .qc-car-w1,
+  .qc-bot[data-travel="car"] .qc-car-w2 { animation: qc-wheel .3s linear infinite; }
+  @keyframes qc-wheel { 0% { transform: rotate(0) } 100% { transform: rotate(360deg) } }
+
+  /* ---- 纸飞机 ---- */
+  .qc-plane {
+    width: 34px; height: 24px; margin: -13px 0 0 -17px;
+    transform: rotate(var(--qc-fly, 0deg));
+    filter: drop-shadow(0 3px 6px rgba(40,70,120,.35));
+  }
+  .qc-plane svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .qc-bot[data-travel="plane"] .qc-plane { opacity: 1; }
+
+  /* ---- 任意门 ---- */
+  .qc-door {
+    width: 34px; height: 46px; margin: -26px 0 0 -17px;
+    border: 3px solid #6d5138; border-radius: 7px 7px 2px 2px;
+    background: #1b2233;
+    box-shadow: 0 4px 12px rgba(20,30,60,.45);
+    perspective: 90px;
+  }
+  .qc-door-panel {
+    position: absolute; inset: 0;
+    background: linear-gradient(150deg, #9a7550, #6f5336);
+    border-radius: 3px 3px 0 0;
+    transform-origin: 0 50%;
+    backface-visibility: hidden;
+  }
+  .qc-door-knob {
+    position: absolute; right: 4px; top: 50%; width: 3.4px; height: 3.4px;
+    margin-top: -1.7px; border-radius: 50%; background: #f6d365;
+    box-shadow: 0 0 4px rgba(246,211,101,.8);
+  }
+  .qc-bot[data-travel="portal"] .qc-door { opacity: 1; }
+  .qc-bot[data-travel="portal"][data-tph="1"] .qc-door { animation: qc-door-pop .34s ease-out; }
+  .qc-bot[data-travel="portal"][data-tph="1"] .qc-door-panel { animation: qc-door-swing .34s ease-in both; }
+  .qc-bot[data-travel="portal"][data-tph="2"] .qc-door { animation: qc-door-leave .56s ease-out both; }
+  .qc-bot[data-travel="portal"][data-tph="2"] .qc-door-panel { transform: rotateY(-72deg); }
+
+  @keyframes qc-door-pop {
+    0% { opacity: 0; transform: scale(.4); }
+    70% { opacity: 1; transform: scale(1.06); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes qc-door-swing {
+    0% { transform: rotateY(0deg); }
+    100% { transform: rotateY(-72deg); }
+  }
+  @keyframes qc-door-leave {
+    0% { opacity: 1; transform: scale(1); }
+    70% { opacity: 1; }
+    100% { opacity: 0; transform: scale(.9); }
+  }
+
+  /* ---- 魔法星火 ---- */
+  .qc-spark { width: 0; height: 0; }
+  .qc-spark i {
+    position: absolute; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px;
+    border-radius: 1px; background: #ffe9a3;
+    box-shadow: 0 0 7px rgba(255,214,110,.95);
+    transform: rotate(calc(45deg + var(--a))) translateX(0) scale(.4);
+  }
+  .qc-spark i:nth-child(1) { --a: 0deg; }
+  .qc-spark i:nth-child(2) { --a: 60deg; }
+  .qc-spark i:nth-child(3) { --a: 120deg; }
+  .qc-spark i:nth-child(4) { --a: 180deg; }
+  .qc-spark i:nth-child(5) { --a: 240deg; }
+  .qc-spark i:nth-child(6) { --a: 300deg; }
+  .qc-bot[data-travel="magic"][data-tph="1"] .qc-spark i { animation: qc-spark-out .46s ease-out both; }
+  .qc-bot[data-travel="magic"][data-tph="2"] .qc-spark i { animation: qc-spark-in .52s ease-out both; }
+
+  @keyframes qc-spark-out {
+    0% { opacity: 0; transform: rotate(calc(45deg + var(--a))) translateX(2px) scale(.3); }
+    30% { opacity: 1; }
+    100% { opacity: 0; transform: rotate(calc(45deg + var(--a))) translateX(23px) scale(1); }
+  }
+  @keyframes qc-spark-in {
+    0% { opacity: 0; transform: rotate(calc(45deg + var(--a))) translateX(23px) scale(.9); }
+    35% { opacity: 1; }
+    100% { opacity: 0; transform: rotate(calc(45deg + var(--a))) translateX(3px) scale(.3); }
+  }
+
+  /* ---- 瞬移光环 ---- */
+  .qc-ring {
+    width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%;
+    border: 2px solid rgba(160,205,255,.95);
+    box-shadow: 0 0 12px rgba(120,180,255,.6), inset 0 0 8px rgba(120,180,255,.4);
+  }
+  .qc-bot[data-travel="blink"][data-tph="2"] .qc-ring { animation: qc-ring .5s ease-out both; }
+
+  @keyframes qc-ring {
+    0% { opacity: 0; transform: scale(.25); }
+    22% { opacity: 1; }
+    100% { opacity: 0; transform: scale(1.6); }
+  }
+
+  /* 车和飞机出场时把本体藏起来 */
+  .qc-bot[data-travel="car"] .qc-bot-body,
+  .qc-bot[data-travel="plane"] .qc-bot-body { opacity: 0; transform: scale(.55); }
+  .qc-bot[data-travel="portal"] .qc-bot-body { animation: qc-body-in-door .46s ease-in both; }
+  .qc-bot[data-travel="portal"][data-tph="2"] .qc-bot-body { animation: qc-body-out-door .56s cubic-bezier(.34,1.4,.64,1) both; }
+  .qc-bot[data-travel="magic"] .qc-bot-body { animation: qc-body-poof .46s ease-in both; }
+  .qc-bot[data-travel="magic"][data-tph="2"] .qc-bot-body { animation: qc-body-appear .52s cubic-bezier(.34,1.5,.64,1) both; }
+  .qc-bot[data-travel="blink"] .qc-bot-body { animation: qc-body-blink-out .2s ease-in both; }
+  .qc-bot[data-travel="blink"][data-tph="2"] .qc-bot-body { animation: qc-body-blink-in .3s ease-out both; }
+
+  @keyframes qc-body-in-door {
+    0% { opacity: 1; transform: scale(1) translateY(0); }
+    38% { opacity: 1; transform: scale(.72) translateY(7px); }
+    100% { opacity: 0; transform: scale(.12) translateY(14px); }
+  }
+  @keyframes qc-body-out-door {
+    0% { opacity: 0; transform: scale(.12) translateY(14px); }
+    58% { opacity: 1; transform: scale(1.08) translateY(0); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes qc-body-poof {
+    0% { opacity: 1; transform: scale(1) rotate(0); }
+    55% { opacity: .95; transform: scale(.88) rotate(-7deg); }
+    100% { opacity: 0; transform: scale(.18) rotate(-26deg); }
+  }
+  @keyframes qc-body-appear {
+    0% { opacity: 0; transform: scale(.18) rotate(22deg); }
+    58% { opacity: 1; transform: scale(1.12) rotate(-3deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0); }
+  }
+  @keyframes qc-body-blink-out {
+    0% { opacity: 1; transform: scale(1); filter: brightness(1); }
+    68% { opacity: .85; transform: scale(.85); filter: brightness(2.6); }
+    100% { opacity: 0; transform: scale(.7); filter: brightness(3); }
+  }
+  @keyframes qc-body-blink-in {
+    0% { opacity: 0; transform: scale(.7); filter: brightness(3); }
+    55% { opacity: 1; transform: scale(1.1); filter: brightness(1.4); }
+    100% { opacity: 1; transform: scale(1); filter: brightness(1); }
+  }
+
   @keyframes qc-bot-breathe { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.04) } }
   @keyframes qc-bot-blink { 0%, 93%, 100% { transform: scaleY(1) } 96% { transform: scaleY(.1) } }
   @keyframes qc-bot-look {
@@ -594,22 +773,39 @@
   .qc-bot-hat > i[data-i="beanie"] { left: -3px; top: -12px; width: 44px; height: 20px; color: var(--qc-b); }
   .qc-bot-hat > i[data-i="crown"] { left: 2px; top: -9px; width: 34px; height: 14px; }
   .qc-bot-hat > i[data-i="grad"] { left: -2px; top: -12px; width: 42px; height: 20px; }
+  .qc-bot-hat > i[data-i="santa"] { left: -3px; top: -12px; width: 44px; height: 20px; }
+  .qc-bot-hat > i[data-i="witch"] { left: -4px; top: -17px; width: 46px; height: 26px; }
+  /* 耳机是戴在两侧的，位置压得低一点，别飘在头顶 */
+  .qc-bot-hat > i[data-i="phones"] { left: -6px; top: -3px; width: 50px; height: 24px; }
 
   .qc-bot-ears > i { color: var(--qc-a); }
   .qc-bot-ears > i[data-i="cat"] { left: -3px; top: -8px; width: 44px; height: 12px; }
   .qc-bot-ears > i[data-i="bunny"] { left: 1px; top: -20px; width: 36px; height: 24px; }
+  /* 狗耳是垂的，起点比猫耳低，耳朵尖朝下；压暗一点才和脑袋分得开 */
+  .qc-bot-ears > i[data-i="dog"] {
+    left: -3px; top: -7px; width: 44px; height: 18px;
+    filter: brightness(.8) saturate(1.15);
+  }
 
   .qc-bot-neck > i[data-i="bow"],
   .qc-bot-neck > i[data-i="scarf"] { inset: 0; }
+  .qc-bot-neck > i[data-i="tie"] { left: 50%; margin-left: -6.5px; top: -9px; width: 13px; height: 15px; }
+  .qc-bot-neck > i[data-i="bell"] { left: 50%; margin-left: -8px; top: -6px; width: 16px; height: 14px; }
 
   .qc-bot[data-hat="cap"] .qc-bot-hat > i[data-i="cap"],
   .qc-bot[data-hat="beanie"] .qc-bot-hat > i[data-i="beanie"],
   .qc-bot[data-hat="crown"] .qc-bot-hat > i[data-i="crown"],
   .qc-bot[data-hat="grad"] .qc-bot-hat > i[data-i="grad"],
+  .qc-bot[data-hat="santa"] .qc-bot-hat > i[data-i="santa"],
+  .qc-bot[data-hat="witch"] .qc-bot-hat > i[data-i="witch"],
+  .qc-bot[data-hat="phones"] .qc-bot-hat > i[data-i="phones"],
   .qc-bot[data-ears="cat"] .qc-bot-ears > i[data-i="cat"],
   .qc-bot[data-ears="bunny"] .qc-bot-ears > i[data-i="bunny"],
+  .qc-bot[data-ears="dog"] .qc-bot-ears > i[data-i="dog"],
   .qc-bot[data-neck="bow"] .qc-bot-neck > i[data-i="bow"],
-  .qc-bot[data-neck="scarf"] .qc-bot-neck > i[data-i="scarf"] {
+  .qc-bot[data-neck="scarf"] .qc-bot-neck > i[data-i="scarf"],
+  .qc-bot[data-neck="tie"] .qc-bot-neck > i[data-i="tie"],
+  .qc-bot[data-neck="bell"] .qc-bot-neck > i[data-i="bell"] {
     opacity: 1; transform: none;
   }
 
@@ -624,45 +820,8 @@
    * 小动作：全部挂在已有事件上，不额外加定时器
    * 统一走 transform / opacity，时长 0.5-1.6s，回落都带一点过冲
    * ============================================================ */
-  .qc-bot-pages, .qc-bot-stamp, .qc-bot-count, .qc-bot-fly, .qc-bot-qmark {
+  .qc-bot-stamp, .qc-bot-count, .qc-bot-fly, .qc-bot-qmark {
     position: absolute; pointer-events: none; opacity: 0;
-  }
-
-  /* ① 读题：头顶一本小册子，一页页翻过去
-     注意：head 上有无限动画占着 transform，想让它「歪/抬」必须也用 animation，
-     否则普通 transform 声明会被 animation 盖掉（这里踩过一次） */
-  .qc-bot-pages {
-    top: -6px; left: 50%; margin-left: -13px; width: 26px; height: 13px;
-    perspective: 90px;
-  }
-  .qc-bot-pages i {
-    position: absolute; top: 0; left: 0; width: 17px; height: 12px;
-    border-radius: 2px;
-    background:
-      repeating-linear-gradient(to bottom, rgba(70,95,140,.5) 0 1px, transparent 1px 3.4px),
-      linear-gradient(160deg, #fbfdff, #dfe8f8);
-    border: 1px solid rgba(70,95,140,.45);
-    box-shadow: 0 1px 3px rgba(0,0,0,.3), inset -1px 0 0 rgba(120,140,180,.35);
-    transform-origin: 0 50%;
-    backface-visibility: hidden;
-  }
-  .qc-bot-pages i:nth-child(1) { left: 1px; }
-  .qc-bot-pages i:nth-child(2) { left: 5px; }
-  .qc-bot-pages i:nth-child(3) { left: 9px; }
-  .qc-bot[data-state="thinking"] .qc-bot-pages { opacity: 1; }
-  .qc-bot[data-state="thinking"] .qc-bot-pages i {
-    animation: qc-page-flip 2.4s cubic-bezier(.42,.05,.58,.95) infinite;
-  }
-  .qc-bot[data-state="thinking"] .qc-bot-pages i:nth-child(2) { animation-delay: .3s; }
-  .qc-bot[data-state="thinking"] .qc-bot-pages i:nth-child(3) { animation-delay: .6s; }
-
-  @keyframes qc-page-flip {
-    0%   { opacity: 0; transform: translate(0, 0) rotateY(0deg) rotateZ(0); }
-    4%   { opacity: 1; transform: translate(0, -1px) rotateY(0deg) rotateZ(0); }
-    24%  { opacity: 1; transform: translate(0, -3px) rotateY(-38deg) rotateZ(-4deg); }
-    38%  { opacity: .92; transform: translate(0, -4px) rotateY(-116deg) rotateZ(-7deg); }
-    45%  { opacity: 0; transform: translate(0, -4px) rotateY(-152deg) rotateZ(-7deg); }
-    100% { opacity: 0; transform: translate(0, 0) rotateY(0deg) rotateZ(0); }
   }
 
   /* ② 答完一题：头顶弹一个数字球 */
@@ -849,9 +1008,8 @@
     .qc-bot-body, .qc-bot-head, .qc-bot-eyes, .qc-bot-eye,
     .qc-bot-antenna::after, .qc-bot-tick path, .qc-bot-zzz i,
     .qc-bot-heart, .qc-bot-spiral, .qc-bot-spiral svg,
-    .qc-bot-pages i, .qc-bot-stamp, .qc-bot-count, .qc-bot-fly, .qc-bot-qmark,
+    .qc-bot-stamp, .qc-bot-count, .qc-bot-fly, .qc-bot-qmark,
     .qc-bot-hat, .qc-bot-ears, .qc-bot-neck { animation: none !important; }
-    .qc-bot-pages { opacity: 0 !important; }
     .qc-bot[data-state="done"] .qc-bot-tick path,
     .qc-bot[data-state="warn"] .qc-bot-tick path { stroke-dashoffset: 0; }
     .qc-bot[data-mood="sleepy"] .qc-bot-zzz i { opacity: .92; }
@@ -905,14 +1063,23 @@
      SVG 用 currentColor 取皮肤色，具体颜色在 CSS 里按配件指定。 */
   const WEAR_KINDS = ['hat', 'ears', 'neck'];
   const WEAR_ITEMS = {
-    hat: ['none', 'cap', 'beanie', 'crown', 'grad'],
-    ears: ['none', 'cat', 'bunny'],
-    neck: ['none', 'bow', 'scarf']
+    hat: ['none', 'cap', 'beanie', 'crown', 'grad', 'santa', 'witch', 'phones'],
+    ears: ['none', 'cat', 'bunny', 'dog'],
+    neck: ['none', 'bow', 'scarf', 'tie', 'bell']
   };
   const WEAR_CN = {
-    hat: { none: '不戴', cap: '棒球帽', beanie: '毛线帽', crown: '小皇冠', grad: '学士帽' },
-    ears: { none: '不戴', cat: '猫耳', bunny: '兔耳' },
-    neck: { none: '不戴', bow: '领结', scarf: '围巾' }
+    hat: {
+      none: '不戴',
+      cap: '棒球帽',
+      beanie: '毛线帽',
+      crown: '小皇冠',
+      grad: '学士帽',
+      santa: '圣诞帽',
+      witch: '女巫帽',
+      phones: '耳机'
+    },
+    ears: { none: '不戴', cat: '猫耳', bunny: '兔耳', dog: '狗耳' },
+    neck: { none: '不戴', bow: '领结', scarf: '围巾', tie: '领带', bell: '铃铛' }
   };
 
   const HAT_SVG = {
@@ -943,6 +1110,34 @@
       '<path d="M21 2.6l16 5.2-16 1.6z" fill="#3c4557"/>' +
       '<path d="M35.6 8.4v7.2" stroke="#fbbf24" stroke-width="1.1"/>' +
       '<circle cx="35.6" cy="17" r="1.8" fill="#fbbf24"/>' +
+      '</svg>',
+    santa:
+      '<svg viewBox="0 0 44 20" aria-hidden="true">' +
+      '<path d="M7.4 14.2C9.6 6.2 18.2 1 27.8 3.2 34.2 4.6 38 8.4 38.8 14.2z" fill="#e23a4b"/>' +
+      '<path d="M12.6 11.8C14.8 6.8 20.6 4 26.4 4.8" stroke="#ff7280" stroke-width="2" fill="none" ' +
+      'opacity=".55" stroke-linecap="round"/>' +
+      '<rect x="3.6" y="12.6" width="36" height="5.8" rx="2.9" fill="#fff"/>' +
+      '<rect x="3.6" y="15.6" width="36" height="2.8" rx="1.4" fill="#dbe3f0"/>' +
+      '<circle cx="38.4" cy="8" r="3.5" fill="#fff"/>' +
+      '<circle cx="37.5" cy="7.1" r="1.3" fill="#eef3fb"/>' +
+      '</svg>',
+    witch:
+      '<svg viewBox="0 0 46 26" aria-hidden="true">' +
+      '<ellipse cx="23" cy="21.6" rx="18" ry="4.2" fill="#463a86"/>' +
+      '<path d="M11.8 20.6C14.8 12.4 19.6 5.2 26.8 2c-2.7 5.6-3.6 11.8-3.2 18.6z" fill="#5b4bb0"/>' +
+      '<path d="M26.8 2c3.7-1.1 5.8 1.5 4.2 4.5" stroke="#5b4bb0" stroke-width="2.6" fill="none" ' +
+      'stroke-linecap="round"/>' +
+      '<path d="M13.6 17.2h12.4l1 3.3H12.6z" fill="#fbbf24"/>' +
+      '<circle cx="30.6" cy="4.2" r="1.8" fill="#f6d365"/>' +
+      '</svg>',
+    phones:
+      '<svg viewBox="0 0 48 22" aria-hidden="true">' +
+      '<path d="M8 17.6C8 8.6 15 3.2 24 3.2s16 5.4 16 14.4" stroke="#2f3646" stroke-width="3.4" ' +
+      'fill="none" stroke-linecap="round"/>' +
+      '<rect x="3" y="13.2" width="9.2" height="8.2" rx="4.3" fill="#3b4454"/>' +
+      '<rect x="35.8" y="13.2" width="9.2" height="8.2" rx="4.3" fill="#3b4454"/>' +
+      '<rect x="5.3" y="15.3" width="4.6" height="4.2" rx="2.1" fill="#7f8da6"/>' +
+      '<rect x="38.1" y="15.3" width="4.6" height="4.2" rx="2.1" fill="#7f8da6"/>' +
       '</svg>'
   };
 
@@ -960,6 +1155,13 @@
       '<ellipse cx="25" cy="10" rx="4.8" ry="9.6" fill="currentColor" transform="rotate(13 25 10)"/>' +
       '<ellipse cx="11" cy="10" rx="2.2" ry="6.2" fill="#ff9db8" opacity=".74" transform="rotate(-13 11 10)"/>' +
       '<ellipse cx="25" cy="10" rx="2.2" ry="6.2" fill="#ff9db8" opacity=".74" transform="rotate(13 25 10)"/>' +
+      '</svg>',
+    dog:
+      '<svg viewBox="0 0 44 18" aria-hidden="true">' +
+      '<ellipse cx="6.6" cy="9.4" rx="5" ry="8" fill="currentColor" transform="rotate(-10 6.6 9.4)"/>' +
+      '<ellipse cx="37.4" cy="9.4" rx="5" ry="8" fill="currentColor" transform="rotate(10 37.4 9.4)"/>' +
+      '<ellipse cx="6.8" cy="10.2" rx="2.1" ry="4.6" fill="#c98d6a" opacity=".6" transform="rotate(-10 6.8 10.2)"/>' +
+      '<ellipse cx="37.2" cy="10.2" rx="2.1" ry="4.6" fill="#c98d6a" opacity=".6" transform="rotate(10 37.2 10.2)"/>' +
       '</svg>'
   };
 
@@ -976,6 +1178,20 @@
       '<path d="M.6 5.2Q2 1.6 7 1.6h16q5 0 6.4 3.6l-1.8 5.6Q15 12.6 2.4 10.8z" fill="#34d399"/>' +
       '<path d="M.6 5.2Q2 1.6 7 1.6h16q5 0 6.4 3.6l-.5 1.5H1.1z" fill="#25a87a"/>' +
       '<path d="M18.6 7.6c.1 2 .1 3.4 0 5.1l3.5-1.2V8.1z" fill="#2bb584"/>' +
+      '</svg>',
+    tie:
+      '<svg viewBox="0 0 14 20" aria-hidden="true">' +
+      '<path d="M4.2 1h5.6l1 3.2-3.8 1.8L3.2 4.2z" fill="#2f3f6b"/>' +
+      '<path d="M4.4 5.6h5.2l1.2 9.4L7 19.4l-3.8-4.4z" fill="#3b5bdb"/>' +
+      '<path d="M7 6.4v12.2" stroke="#2b46a8" stroke-width=".8" opacity=".7"/>' +
+      '</svg>',
+    bell:
+      '<svg viewBox="0 0 16 18" aria-hidden="true">' +
+      '<path d="M8 1.2v2.2" stroke="#e23a4b" stroke-width="1.6" stroke-linecap="round"/>' +
+      '<path d="M8 3.4c-3 0-4.6 2.6-4.6 5.6h9.2c0-3-1.6-5.6-4.6-5.6z" fill="#fbbf24"/>' +
+      '<path d="M4.2 7.2c.5-2 1.9-3.2 3.8-3.2" stroke="#ffd98a" stroke-width="1" fill="none" opacity=".8"/>' +
+      '<rect x="2.6" y="8.8" width="10.8" height="2.2" rx="1.1" fill="#e0a006"/>' +
+      '<circle cx="8" cy="12.9" r="1.7" fill="#e0a006"/>' +
       '</svg>'
   };
 
@@ -990,6 +1206,15 @@
   const NECK_HTML = wearHtml('neck', NECK_SVG);
 
   /* 机器人本体结构：衣橱的预览也复用它，省得两处各写一份 */
+  /* 纸飞机：一张折过的纸，右下角带折痕 */
+  const PLANE_SVG =
+    '<svg viewBox="0 0 36 24" aria-hidden="true">' +
+    '<path d="M2.2 11.4 33.4 2.2 23.2 21.6l-6.4-7.6z" fill="#f7fbff" stroke="#b9cbe4" ' +
+    'stroke-width="1" stroke-linejoin="round"/>' +
+    '<path d="M16.8 14 33.4 2.2 23.2 21.6z" fill="#dbe8f8"/>' +
+    '<path d="M16.8 14l1.6 5.2" stroke="#b9cbe4" stroke-width=".9" stroke-linecap="round"/>' +
+    '</svg>';
+
   const BOT_INNER =
     '<span class="qc-bot-body">' +
     '<span class="qc-bot-antenna"></span>' +
@@ -1003,7 +1228,6 @@
     '<span class="qc-bot-neck">' + NECK_HTML + '</span>' +
     '<span class="qc-bot-hat">' + HAT_HTML + '</span>' +
     '<span class="qc-bot-web">' + WEB_SVG + '</span>' +
-    '<span class="qc-bot-pages"><i></i><i></i><i></i></span>' +
     '<span class="qc-bot-count"></span>' +
     '<span class="qc-bot-stamp"></span>' +
     '<span class="qc-bot-fly"></span>' +
@@ -1011,6 +1235,12 @@
     '<svg class="qc-bot-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5 L10 17 L18.5 7.5"/></svg>' +
     '</span></span>' +
     '<span class="qc-ball"><i></i></span>' +
+    '<span class="qc-car"><i class="qc-car-body"></i><i class="qc-car-cab"></i>' +
+    '<i class="qc-car-w1"></i><i class="qc-car-w2"></i></span>' +
+    '<span class="qc-plane">' + PLANE_SVG + '</span>' +
+    '<span class="qc-door"><i class="qc-door-panel"></i><i class="qc-door-knob"></i></span>' +
+    '<span class="qc-spark"><i></i><i></i><i></i><i></i><i></i><i></i></span>' +
+    '<span class="qc-ring"></span>' +
     '<span class="qc-pomo"><span class="qc-pomo-t"></span><span class="qc-pomo-bar"><i></i></span></span>' +
     '<span class="qc-bot-bubble"><span class="qc-bot-bubble-txt"></span></span>';
 
@@ -1529,6 +1759,133 @@
     });
   }
 
+  /* ---------------- 赶路方式：每次随机挑一种 ---------------- */
+  const TRAVELS = ['ball', 'car', 'plane', 'portal', 'magic', 'blink'];
+  let lastTravel = '';
+
+  function pickTravel() {
+    const pool = TRAVELS.filter((t) => t !== lastTravel);
+    const m = pool[Math.floor(Math.random() * pool.length)] || 'ball';
+    lastTravel = m;
+    return m;
+  }
+
+  const easeInOut = (p) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
+
+  /* 通用补间：带看门狗，后台标签页 / 无头浏览器 rAF 不跑也不会把 await 卡死 */
+  function tween(dur, fn) {
+    return new Promise((resolve) => {
+      const t0 = performance.now();
+      let done = false;
+      let wd = null;
+      const end = () => {
+        if (done) return;
+        done = true;
+        if (wd) clearTimeout(wd);
+        resolve();
+      };
+      const step = (t) => {
+        if (done) return;
+        const p = Math.min(1, (t - t0) / dur);
+        fn(p);
+        if (p < 1) requestAnimationFrame(step);
+        else end();
+      };
+      wd = setTimeout(() => {
+        fn(1);
+        end();
+      }, dur + 500);
+      requestAnimationFrame(step);
+    });
+  }
+
+  /* 从当前位置赶到 (tx, ty)。forceMode 不给就随机 */
+  async function travelTo(tx, ty, forceMode) {
+    if (!el) return;
+    const from = el.getBoundingClientRect();
+    const dx = tx - from.left;
+    const dy = ty - from.top;
+    const dist = Math.hypot(dx, dy);
+    const mode = forceMode || pickTravel();
+
+    const setPos = (x, y) => {
+      if (!el) return;
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
+    };
+
+    /* ① 化成球滚过去（原来那套） */
+    if (mode === 'ball') {
+      el.dataset.form = 'ball';
+      await wait(230);
+      await rollToXY(tx, ty);
+      if (el) {
+        delete el.dataset.form;
+        el.style.removeProperty('--qc-roll');
+      }
+      hop();
+      return;
+    }
+
+    el.dataset.travel = mode;
+
+    /* ② 开车：直线，一路小颠 */
+    if (mode === 'car') {
+      const dur = Math.max(520, Math.min(1600, dist / 0.55));
+      await tween(dur, (p) => {
+        const e = easeInOut(p);
+        setPos(from.left + dx * e, from.top + dy * e);
+        if (el) el.style.setProperty('--qc-bump', (Math.sin(p * Math.PI * 9) * 1.6).toFixed(2) + 'px');
+      });
+      if (el) {
+        delete el.dataset.travel;
+        el.style.removeProperty('--qc-bump');
+      }
+      hop();
+      return;
+    }
+
+    /* ③ 纸飞机：走一条向上的弧线，机身跟着切线转 */
+    if (mode === 'plane') {
+      const dur = Math.max(680, Math.min(1900, dist / 0.45));
+      const mx = (from.left + tx) / 2;
+      const my = Math.min(from.top, ty) - Math.min(150, 50 + dist * 0.3);
+      await tween(dur, (p) => {
+        const e = easeInOut(p);
+        const x = (1 - e) * (1 - e) * from.left + 2 * (1 - e) * e * mx + e * e * tx;
+        const y = (1 - e) * (1 - e) * from.top + 2 * (1 - e) * e * my + e * e * ty;
+        setPos(x, y);
+        const tanX = 2 * (1 - e) * (mx - from.left) + 2 * e * (tx - mx);
+        const tanY = 2 * (1 - e) * (my - from.top) + 2 * e * (ty - my);
+        if (el) el.style.setProperty('--qc-fly', ((Math.atan2(tanY, tanX) * 180) / Math.PI).toFixed(1) + 'deg');
+      });
+      if (el) {
+        delete el.dataset.travel;
+        el.style.removeProperty('--qc-fly');
+      }
+      hop();
+      return;
+    }
+
+    /* ④⑤⑥ 任意门 / 魔法 / 瞬移：原地消失 → 瞬移 → 目的地出现 */
+    el.dataset.tph = '1';
+    await wait(mode === 'blink' ? 210 : 470);
+    setPos(tx, ty);
+    if (el) {
+      delete el.dataset.tph;
+      void el.offsetWidth; // 强制重排，第二段动画才会重新播
+      el.dataset.tph = '2';
+    }
+    await wait(mode === 'blink' ? 480 : 580);
+    if (el) {
+      delete el.dataset.tph;
+      delete el.dataset.travel;
+    }
+    hop();
+  }
+
   /* 滚到某个矩形旁边（选区上方，贴顶就换到下方） */
   async function rollTo(rect) {
     if (!el || rolling || !rect) return false;
@@ -1545,38 +1902,23 @@
     if (ty < 8) ty = Math.min(window.innerHeight - h - 8, rect.bottom + 10);
     tx = Math.max(8, Math.min(window.innerWidth - w - 8, tx));
 
-    el.dataset.form = 'ball';
     el.dataset.busy = '1';
-    await wait(230);          // 先化形成球，站稳了再起步
-
-    await rollToXY(tx, ty);
-
-    if (el) {
-      delete el.dataset.form;
-      delete el.dataset.busy;
-      el.style.removeProperty('--qc-roll');
-    }
+    await travelTo(tx, ty);
+    if (el) delete el.dataset.busy;
     rolling = false;
     placeBubble();
-    hop();
     return true;
   }
 
-  /* 解释完了自己滚回原位 */
+  /* 解释完了自己滚回原位（回去这趟固定用球，别让人追着看第二段动画） */
   async function rollHome() {
     if (!el || rolling || !rollOrigin) return;
     const o = rollOrigin;
     rollOrigin = null;
     rolling = true;
-    el.dataset.form = 'ball';
     el.dataset.busy = '1';
-    await wait(230);
-    await rollToXY(o.left, o.top);
-    if (el) {
-      delete el.dataset.form;
-      delete el.dataset.busy;
-      el.style.removeProperty('--qc-roll');
-    }
+    await travelTo(o.left, o.top, 'ball');
+    if (el) delete el.dataset.busy;
     rolling = false;
     placeBubble();
   }
@@ -2230,5 +2572,5 @@
     };
   }
 
-  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, rollTo, rollHome, growWeb, clearWeb, armWeb: scheduleWeb, setWebRetry: (ms) => { webRetry = Math.max(20, Number(ms) || WEB_RETRY); }, webAfter: () => WEB_AFTER, wanderOnce: wander, setSkin, nextSkin, setWear, getWear, randomWear, WEAR_ITEMS, WEAR_CN, BOT_INNER, getEl: () => el, CSS, SKINS, playFx, countTo, flyOut, peekMenu };
+  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, rollTo, rollHome, growWeb, clearWeb, armWeb: scheduleWeb, setWebRetry: (ms) => { webRetry = Math.max(20, Number(ms) || WEB_RETRY); }, webAfter: () => WEB_AFTER, wanderOnce: wander, setSkin, nextSkin, setWear, getWear, randomWear, WEAR_ITEMS, WEAR_CN, BOT_INNER, getEl: () => el, CSS, SKINS, playFx, countTo, flyOut, peekMenu, travelTo, pickTravel, TRAVELS };
 })();

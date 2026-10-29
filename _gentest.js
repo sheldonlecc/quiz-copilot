@@ -104,6 +104,20 @@ ${scripts}
         else if (shot === 'done') M.setState('done');
         else if (shot === 'confused') M.setMood('confused', 8000);
         else if (shot === 'menu') { M.peekMenu(true); if (Q.menu) Q.menu.open(); }
+        else if (shot.indexOf('wear') === 0) {
+          var hn = shot.indexOf('wear-') === 0 ? shot.slice(5) : 'santa';
+          M.setWear({ hat: hn, ears: 'dog', neck: 'tie' }, { save: false });
+          // 无头里动画时钟冻住，关掉动画/过渡才能看到稳态
+          [].forEach.call(M.getEl().querySelectorAll('.qc-bot-hat, .qc-bot-ears, .qc-bot-neck'), function (w) {
+            w.style.animation = 'none';
+            [].forEach.call(w.children, function (c) {
+              c.style.animation = 'none';
+              c.style.transition = 'none';
+            });
+          });
+        } else if (shot.indexOf('travel-') === 0) {
+          M.getEl().dataset.travel = shot.slice(7);
+        }
       }, 100);
       return;
     }
@@ -200,6 +214,24 @@ ${scripts}
     Q.menu.close();
     await sleep(70);
     rec('closing menu clears peek', !bot.dataset.lookmenu);
+
+    /* 5d. 赶路方式：随机但合法、不连着重复，五种道具都在 */
+    var tv1 = Q.mascot.pickTravel();
+    var tv2 = Q.mascot.pickTravel();
+    rec('travel mode valid',
+      Q.mascot.TRAVELS.indexOf(tv1) >= 0 && Q.mascot.TRAVELS.indexOf(tv2) >= 0, tv1 + ',' + tv2);
+    rec('travel does not repeat', tv1 !== tv2, tv1 + '/' + tv2);
+    rec('travel props exist',
+      !!bot.querySelector('.qc-car') && !!bot.querySelector('.qc-plane') &&
+      !!bot.querySelector('.qc-door') && !!bot.querySelector('.qc-spark') && !!bot.querySelector('.qc-ring'));
+
+    var beforeT = bot.getBoundingClientRect();
+    await Q.mascot.travelTo(160, 220, 'car');
+    var afterT = bot.getBoundingClientRect();
+    rec('car travel moves bot',
+      Math.abs(afterT.left - beforeT.left) > 10 && !bot.dataset.travel,
+      Math.round(beforeT.left) + '→' + Math.round(afterT.left) + ' travel=' + bot.dataset.travel);
+    rec('car travel clears bump', !bot.style.getPropertyValue('--qc-bump'));
 
     /* 6. 右键菜单 */
     Q.S.autoFill = true;
@@ -298,8 +330,10 @@ ${scripts}
     rec('wardrobe has 3 groups', !!wd && wd.querySelectorAll('.qc-wd-grp').length === 3,
       wd ? String(wd.querySelectorAll('.qc-wd-grp').length) : '0');
     rec('wardrobe has preview bot', !!wd && !!wd.querySelector('.qc-wd-bot'));
-    rec('wardrobe chip count', !!wd && wd.querySelectorAll('[data-kind]').length === 11,
-      wd ? String(wd.querySelectorAll('[data-kind]').length) : '0');
+    var wItems = Q.mascot.WEAR_ITEMS;
+    var wTotal = wItems.hat.length + wItems.ears.length + wItems.neck.length;
+    rec('wardrobe chip count', !!wd && wd.querySelectorAll('[data-kind]').length === wTotal,
+      (wd ? String(wd.querySelectorAll('[data-kind]').length) : '0') + '/' + wTotal);
 
     var mb2 = Q.mascot.getEl();
     var gradBtn = wd.querySelector('[data-kind="hat"][data-v="grad"]');
@@ -326,9 +360,9 @@ ${scripts}
 
     var rd = Q.mascot.randomWear();
     rec('random wear is valid',
-      ['cap', 'beanie', 'crown', 'grad'].indexOf(rd.hat) >= 0 &&
-      ['none', 'cat', 'bunny'].indexOf(rd.ears) >= 0 &&
-      ['none', 'bow', 'scarf'].indexOf(rd.neck) >= 0, JSON.stringify(rd));
+      wItems.hat.indexOf(rd.hat) >= 0 &&
+      wItems.ears.indexOf(rd.ears) >= 0 &&
+      wItems.neck.indexOf(rd.neck) >= 0, JSON.stringify(rd));
 
     var clrBtn = wd.querySelector('[data-act="clear"]');
     if (clrBtn) clrBtn.click();
@@ -430,21 +464,12 @@ ${scripts}
     rec('finished while away clears storage', !window.__local.qcPomo, String(window.__local.qcPomo));
     Q.pomo.stop(true);
 
-    /* 8b. 小动作：翻页 / 计数球 / 投递 / 盖章 / 菜单探头 */
+    /* 8b. 小动作：计数球 / 投递 / 盖章 / 菜单探头 */
     var botEl2 = Q.mascot.getEl();
     rec('fx nodes exist',
-      !!botEl2.querySelector('.qc-bot-pages') && !!botEl2.querySelector('.qc-bot-count') &&
+      !!botEl2.querySelector('.qc-bot-count') &&
       !!botEl2.querySelector('.qc-bot-stamp') && !!botEl2.querySelector('.qc-bot-fly') &&
       !!botEl2.querySelector('.qc-bot-qmark'));
-
-    Q.mascot.setState('thinking');
-    await sleep(50);
-    rec('thinking shows page flip', getComputedStyle(botEl2.querySelector('.qc-bot-pages')).opacity === '1',
-      getComputedStyle(botEl2.querySelector('.qc-bot-pages')).opacity);
-    rec('page flip is slow enough',
-      parseFloat(getComputedStyle(botEl2.querySelector('.qc-bot-pages i')).animationDuration) >= 2,
-      getComputedStyle(botEl2.querySelector('.qc-bot-pages i')).animationDuration);
-    Q.mascot.setState('idle');
 
     Q.mascot.countTo(3);
     await sleep(30);
