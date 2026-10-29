@@ -40,6 +40,7 @@
     skin: 'blue',
     selExplain: true,
     explain: null,   // 划词解释的结果：{ src, body, loading, error }
+    copyFormat: 'plain', // 复制答案的格式：plain / reason / md
     pomo: null       // 番茄钟：{ end, total, timer }
   };
 

@@ -23,23 +23,47 @@
 
   const clampNum = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  /* 编程题：思路一行字，代码一整块，能滚能复制 */
+  /* 编程题：思路一行字，代码一整块，能滚能复制；换语言重写就地点 */
+  const CODE_LANGS = ['C++', 'Python', 'Java'];
+
   function codeBand(q) {
     const code = String(q.answer || '');
-    const lang = esc(q.codeLang || q.lang || '代码');
+    const lang = esc(q.codeLang || q.forceLang || q.lang || '代码');
+    const busy = !!q.solving;
+
+    const chips = CODE_LANGS.map(
+      (l) =>
+        `<button class="qc-chip ${q.forceLang === l ? 'on' : ''}" data-act="code-lang" data-lang="${l}" data-idx="${q.index}"${
+          busy ? ' disabled' : ''
+        }>${l}</button>`
+    ).join('');
+
+    // 页面选的语言和这份代码的语言不一致 —— 写进去大概率编译不过，先提醒
+    const mismatch =
+      q.pageLang && q.codeLang && q.pageLang !== q.codeLang
+        ? `<div class="qc-code-warn">页面选的是 <b>${esc(q.pageLang)}</b>，这份代码是 <b>${esc(
+            q.codeLang
+          )}</b>。先在页面上把语言切过来，或点下面的语言按钮重写。</div>`
+        : '';
+
     if (!code) {
       return `<div class="qc-code empty">
-        <div class="qc-code-meta"><span class="qc-code-lang">${lang}</span><span>还没生成</span></div>
+        <div class="qc-code-meta"><span class="qc-code-lang">${lang}</span><span>${busy ? '重写中…' : '还没生成'}</span></div>
+        ${mismatch}
+        <div class="qc-code-langs">${chips}</div>
       </div>`;
     }
+
     const lines = code.split('\n').length;
     return `<div class="qc-code">
       <div class="qc-code-meta">
         <span class="qc-code-lang">${lang}</span>
-        <span>${lines} 行 · ${code.length} 字符</span>
+        <span>${lines} 行 · ${code.length} 字符${busy ? ' · 重写中…' : ''}</span>
         <button class="qc-mini" data-act="copy-code" data-idx="${q.index}">复制代码</button>
       </div>
+      ${mismatch}
       <pre class="qc-code-pre">${esc(code)}</pre>
+      <div class="qc-code-langs">${chips}</div>
     </div>`;
   }
 
@@ -233,6 +257,7 @@
             <div class="qc-card-acts">
               <button class="qc-mini" data-act="fill-one" data-idx="${q.index}">${q.type === 'code' ? '写入编辑器' : '填入本题'}</button>
               <button class="qc-mini" data-act="${q.type === 'code' ? 'copy-code' : 'copy-one'}" data-idx="${q.index}">${q.type === 'code' ? '复制代码' : '复制'}</button>
+              ${q.type === 'code' && q.prevCode ? `<button class="qc-mini" data-act="code-restore" data-idx="${q.index}">还原</button>` : ''}
               ${q.type === 'code' ? `<button class="qc-mini" data-act="toggle-stem" data-idx="${q.index}">${q.stemOpen ? '收起题目' : '展开题目'}</button>` : ''}
             </div>
           </div>`;
@@ -288,7 +313,7 @@
       </div>
 
       <div class="qc-tools">
-        <button class="qc-tool" data-act="copy">复制答案</button>
+        <button class="qc-tool" data-act="copy" title="当前格式：${COPY_HINT[S.copyFormat] || '只答案'}（设置页可改）">复制答案</button>
         <span class="qc-sep"></span>
         <button class="qc-tool" data-act="selection">读取选中文字</button>
         <span class="qc-sep"></span>
@@ -417,6 +442,54 @@
       return;
     }
 
+    if (act === 'code-lang') {
+      const q = S.questions.find((x) => x.index === idx);
+      const lang = e.currentTarget.getAttribute('data-lang');
+      if (!q || !lang || q.solving) return;
+      if (!Q.solveCodeQ) {
+        setStatus('编程题模块没加载，重新加载扩展再试。', 'warn');
+        render();
+        return;
+      }
+      q.forceLang = lang;
+      q.solving = true;
+      setStatus(`第 ${idx} 题：正在用 ${lang} 重写…`, 'busy');
+      render();
+      Q.solveCodeQ(q).then(
+        () => {
+          q.solving = false;
+          setStatus(`第 ${idx} 题：已用 ${lang} 重写，点「写入编辑器」替换掉旧的。`, 'ok');
+          render();
+        },
+        (err) => {
+          q.solving = false;
+          setStatus(`第 ${idx} 题重写失败：${String((err && err.message) || err).slice(0, 60)}`, 'warn');
+          render();
+        }
+      );
+      return;
+    }
+
+    if (act === 'code-restore') {
+      const q = S.questions.find((x) => x.index === idx);
+      if (!q || !Q.restoreCode) return;
+      q.fillState = 'writing';
+      render();
+      Q.restoreCode(q).then(
+        (err) => {
+          q.fillState = err ? 'fail' : '';
+          setStatus(err ? `第 ${idx} 题：${err}` : `第 ${idx} 题：已还原成写入之前的代码。`, err ? 'warn' : 'ok');
+          render();
+        },
+        (e) => {
+          q.fillState = 'fail';
+          setStatus(String((e && e.message) || e), 'warn');
+          render();
+        }
+      );
+      return;
+    }
+
     if (act === 'copy-one') {
       const q = S.questions.find((x) => x.index === idx);
       if (q) copyText(`第${q.index}题：${answerDisplay(q)}${q.reason ? ' —— ' + q.reason : ''}`);
@@ -424,11 +497,36 @@
     }
   }
 
+  const COPY_HINT = { plain: '只答案', reason: '带解析', md: 'Markdown' };
+
   function copyAll() {
     if (!S.questions.length) return;
-    const text = S.questions
-      .map((q) => `第${q.index}题：${answerDisplay(q)}`)
-      .join('\n');
+    const fmt = S.copyFormat || 'plain';
+    let text = '';
+
+    if (fmt === 'md') {
+      const table = ['| 题号 | 类型 | 答案 |', '| --- | --- | --- |']
+        .concat(
+          S.questions
+            .filter((q) => q.type !== 'code')
+            .map((q) => {
+              const a = String(answerDisplay(q)).replace(/\n/g, ' ').replace(/\|/g, '\\|');
+              return `| ${q.index} | ${TYPE_CN[q.type] || ''} | ${a} |`;
+            })
+        )
+        .join('\n');
+      const codes = S.questions
+        .filter((q) => q.type === 'code')
+        .map((q) => `### 第${q.index}题（${q.codeLang || q.lang || '代码'}）\n\n\`\`\`\n${q.answer || ''}\n\`\`\``);
+      text = [table].concat(codes).join('\n\n');
+    } else if (fmt === 'reason') {
+      text = S.questions
+        .map((q) => `第${q.index}题：${answerDisplay(q)}${q.reason ? ' —— ' + q.reason : ''}`)
+        .join('\n');
+    } else {
+      text = S.questions.map((q) => `第${q.index}题：${answerDisplay(q)}`).join('\n');
+    }
+
     copyText(text);
   }
 

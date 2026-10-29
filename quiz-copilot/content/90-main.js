@@ -196,7 +196,7 @@
   function boot() {
     try {
       chrome.storage.sync.get(
-        { autoFill: true, showFab: true, botSkin: 'blue', selExplain: true, autoPage: false, pageLimit: 30, pomoCustom: 25, chatLevel: 2, botWear: null },
+        { autoFill: true, showFab: true, botSkin: 'blue', selExplain: true, autoPage: false, pageLimit: 30, pomoCustom: 25, chatLevel: 2, botWear: null, copyFormat: 'plain' },
         (cfg) => {
         S.autoFill = !!cfg.autoFill;
         S.autoPage = !!cfg.autoPage;
@@ -205,6 +205,7 @@
         S.pageLimit = Number(cfg.pageLimit) || 30;
         S.pomoCustom = Number(cfg.pomoCustom) || 25;
         S.chatLevel = cfg.chatLevel == null ? 2 : Number(cfg.chatLevel);
+        S.copyFormat = cfg.copyFormat || 'plain';
         S.showFab = cfg.showFab !== false;
         S.selExplain = cfg.selExplain !== false;
         S.skin = cfg.botSkin || 'blue';
@@ -236,6 +237,7 @@
         if (changes.pageLimit) S.pageLimit = Number(changes.pageLimit.newValue) || 30;
         if (changes.pomoCustom) S.pomoCustom = Number(changes.pomoCustom.newValue) || 25;
         if (changes.chatLevel) S.chatLevel = changes.chatLevel.newValue == null ? 2 : Number(changes.chatLevel.newValue);
+        if (changes.copyFormat) S.copyFormat = changes.copyFormat.newValue || 'plain';
         if (changes.selExplain) S.selExplain = changes.selExplain.newValue !== false;
         if (changes.botSkin) {
           S.skin = changes.botSkin.newValue || 'blue';

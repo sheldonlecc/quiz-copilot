@@ -251,6 +251,17 @@
       return;
     }
 
+    /* 编程题页没有「下一页」这回事，也不该被当成测验卷翻页 */
+    if (Q.pageKind && Q.pageKind() === 'code-judge') {
+      clearState();
+      if (Q.mascot) {
+        Q.mascot.setState('warn');
+        Q.mascot.say('这页是编程题，连续做题先停手', 3200, true);
+        Q.mascot.settleAfter(4000);
+      }
+      return;
+    }
+
     running = true;
     stopFlag = false;
     pages = keepPages ? resumePages : 0;

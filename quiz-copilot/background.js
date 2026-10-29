@@ -68,12 +68,15 @@ const CODE_PROMPT = [
   '',
   '要求：',
   '1. 代码必须完整、可直接提交：需要 include / import 的写上；模板里给出的函数名、类名、参数不要改；',
-  '2. 模板是「函数题」（已经给了 class Solution / def 之类）就只补全函数体，不要写 main、不要写输入输出；',
+  '2. 语言必须和用户指定的语言一致；用户没指定就沿用模板的语言，不要自作主张换语言；',
+  '3. 模板是「函数题」（已经给了 class Solution / def 之类）就只补全函数体，不要写 main、不要写输入输出；',
   '   没有模板或模板为空时按「ACM 模式」写完整程序（自己读输入、自己输出）；',
-  '3. 不要写测试用例、不要打印调试信息、不要留 TODO；',
-  '4. 关键步骤写一句注释即可，不要整段注释，也不要把解释写进代码；',
-  '5. 空输入、单元素、负数、溢出这类边界自己处理，并在「思路」里点一句；',
-  '6. 题目信息缺失（输入范围、返回格式没给全）时按最常见约定实现，并在「思路」最后一句写明你的假设。'
+  '4. 不要写测试用例、不要打印调试信息、不要留 TODO；',
+  '5. 关键步骤写一句注释即可，不要整段注释，也不要把解释写进代码；',
+  '6. 空输入、单元素、负数、溢出这类边界自己处理，并在「思路」里点一句；',
+  '7. 写完先自查：拿题面里的示例逐个走一遍，在「思路」最后按「示例 1：输入 … → 输出 …（与题目一致）」的格式列出来；',
+  '   对不上就改代码，直到全部对上；',
+  '8. 题目信息缺失（输入范围、返回格式没给全）时按最常见约定实现，并在「思路」最后写明你的假设。'
 ].join('\n');
 
 /* ---------------- 配置 ---------------- */
@@ -322,6 +325,27 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  /* 读编辑器里的完整代码：DOM 里只有可视区的行，函数签名可能没渲染出来 */
+  if (msg.type === 'QC_CODE_READ') {
+    (async () => {
+      try {
+        const tabId = sender && sender.tab && sender.tab.id;
+        if (!tabId) throw new Error('拿不到当前标签页');
+        const results = await chrome.scripting.executeScript({
+          target: { tabId, allFrames: false },
+          world: 'MAIN',
+          func: qcReadCodeInPage
+        });
+        const r = results && results[0] && results[0].result;
+        if (!r || !r.ok) throw new Error((r && r.note) || '读不到编辑器内容');
+        sendResponse({ ok: true, code: r.code, how: r.how });
+      } catch (e) {
+        sendResponse({ ok: false, error: String(e && e.message || e) });
+      }
+    })();
+    return true;
+  }
+
   /* 写进代码编辑器：Monaco 的 model 只存在于页面主世界，
      content script 在隔离环境里碰不到，只能从这儿注入进去。 */
   if (msg.type === 'QC_CODE_WRITE') {
@@ -390,6 +414,85 @@ chrome.runtime.onInstalled.addListener((details) => {
     chrome.tabs.create({ url: chrome.runtime.getURL('popup.html') }).catch(() => {});
   }
 });
+
+/* ============================================================
+ * 注入到页面主世界执行的函数：读出编辑器里的完整代码
+ * 用 DOM 读只能拿到可视区的行，模板一长就残缺，模型会据此重写签名
+ * ============================================================ */
+function qcReadCodeInPage() {
+  const SEL = '.monaco-editor, .monaco-diff-editor, .cm-editor, .CodeMirror, .ace_editor';
+
+  const vis = (el) => {
+    if (!el || !el.isConnected) return false;
+    const r = el.getBoundingClientRect();
+    if (r.width < 24 || r.height < 24) return false;
+    const cs = window.getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false;
+    return true;
+  };
+
+  const nodes = Array.prototype.slice.call(document.querySelectorAll(SEL)).filter(vis);
+  if (!nodes.length) return { ok: false, note: '页面上没找到可见的代码编辑器' };
+  nodes.sort((a, b) => b.offsetWidth * b.offsetHeight - a.offsetWidth * a.offsetHeight);
+  const el = nodes[0];
+
+  /* 1) Monaco */
+  try {
+    const m = window.monaco;
+    if (m && m.editor) {
+      if (m.editor.getEditors) {
+        const dom = el.closest('.monaco-editor') || el;
+        const eds = m.editor.getEditors() || [];
+        for (let i = 0; i < eds.length; i++) {
+          let node = null;
+          try {
+            node = eds[i].getDomNode();
+          } catch (e) {
+            node = null;
+          }
+          if (!node || !vis(node)) continue;
+          if (node === dom || node.contains(dom) || dom.contains(node)) {
+            return { ok: true, code: eds[i].getValue(), how: 'monaco' };
+          }
+        }
+      }
+      try {
+        const models = (m.editor.getModels && m.editor.getModels()) || [];
+        const codeLang = /^(cpp|c\+\+|python|java|javascript|typescript|go|rust|c|cs|csharp|kotlin|swift|php|ruby)$/i;
+        let target = null;
+        for (let i = 0; i < models.length; i++) {
+          const mo = models[i];
+          if (mo && codeLang.test(String(mo.getLanguageId ? mo.getLanguageId() : ''))) target = mo;
+        }
+        if (target) return { ok: true, code: target.getValue(), how: 'monaco-model' };
+      } catch (e) {}
+    }
+  } catch (e) {}
+
+  /* 2) Ace */
+  try {
+    if (window.ace && window.ace.edit) {
+      const ed = window.ace.edit(el.closest('.ace_editor') || el);
+      return { ok: true, code: ed.getValue(), how: 'ace' };
+    }
+  } catch (e) {}
+
+  /* 3) CodeMirror 5 */
+  try {
+    const wrap = el.closest('.CodeMirror') || el;
+    if (wrap && wrap.CodeMirror && wrap.CodeMirror.getValue) {
+      return { ok: true, code: wrap.CodeMirror.getValue(), how: 'codemirror5' };
+    }
+  } catch (e) {}
+
+  /* 4) 可编辑区 */
+  try {
+    const content = el.querySelector('.cm-content');
+    if (content) return { ok: true, code: String(content.innerText || content.textContent || ''), how: 'editable' };
+  } catch (e) {}
+
+  return { ok: false, note: '读不到编辑器内容' };
+}
 
 /* ============================================================
  * 注入到页面主世界执行的函数：把代码写进编辑器

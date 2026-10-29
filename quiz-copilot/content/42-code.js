@@ -258,7 +258,7 @@
   /* ---------------- 提示词 ---------------- */
 
   function buildCodePrompt(q) {
-    const lang = q.lang || guessLang(q.template) || '';
+    const lang = q.forceLang || q.lang || guessLang(q.template) || '';
     const lines = [
       '这是一道在线判题平台的编程题，请给出完整解法。',
       '',
@@ -266,6 +266,8 @@
       q.stem,
       ''
     ];
+
+    if (q.forceLang) lines.push(`请用 ${q.forceLang} 写这道题（用别的不算）。`, '');
 
     const tpl = String(q.template || '').trim();
     if (tpl) {
@@ -287,13 +289,16 @@
       '```',
       '',
       '要求：',
-      '1. 代码必须完整、可直接提交：需要 include / import 的写上，模板里已有的函数签名不要改；',
-      '2. 模板是「函数题」（已经给了 class Solution / def 之类）就只补全函数体，不要写 main、不要写输入输出；',
+      '1. 代码必须完整、可直接提交：需要 include / import 的写上；模板里已有的函数签名不要改；',
+      '2. 语言必须和上面指定的语言一致；没有指定就沿用模板的语言，不要自作主张换语言；',
+      '3. 模板是「函数题」（已经给了 class Solution / def 之类）就只补全函数体，不要写 main、不要写输入输出；',
       '   没有模板或模板为空时按「ACM 模式」写完整程序（自己读输入、自己输出）；',
-      '3. 不要写测试用例、不要打印调试信息、不要留 TODO；',
-      '4. 关键步骤写一句注释即可，不要整段注释，也不要把解释写进代码；',
-      '5. 空输入、单元素、负数、溢出这类边界自己处理，并在「思路」里点一句；',
-      '6. 题目信息缺失（输入范围、返回格式没给全）时按最常见约定实现，并在「思路」最后一句写明你的假设。'
+      '4. 不要写测试用例、不要打印调试信息、不要留 TODO；',
+      '5. 关键步骤写一句注释即可，不要整段注释，也不要把解释写进代码；',
+      '6. 空输入、单元素、负数、溢出这类边界自己处理，并在「思路」里点一句；',
+      '7. 写完先自查：拿题面里的示例逐个走一遍，在「思路」最后按「示例 1：输入 … → 输出 …（与题目一致）」的格式列出来；',
+      '   对不上就改代码，直到全部对上；',
+      '8. 题目信息缺失（输入范围、返回格式没给全）时按最常见约定实现，并在「思路」最后写明你的假设。'
     );
     return lines.join('\n');
   }
@@ -364,17 +369,114 @@
     };
   }
 
+  /* ---------------- 读编辑器 / 页面语言 ---------------- */
+
+  /* DOM 里只有可视区的行，模板一长就残缺；这里进主世界拿全量 */
+  async function readEditorCode() {
+    if (!Q.sendBg) return { ok: false, code: '' };
+    try {
+      const resp = await Q.sendBg({ type: 'QC_CODE_READ' });
+      if (!resp || !resp.ok) return { ok: false, code: '' };
+      return { ok: true, code: String(resp.code || ''), how: resp.how || '' };
+    } catch (e) {
+      return { ok: false, code: '' };
+    }
+  }
+
+  /* 页面语言选择器上的文字（LeetCode 右上角那个 C++ / Python3）。
+     只在「恰好认出一个」时才给值，认不出或有歧义就返回空，宁可不提示也别瞎提示。 */
+  const LANG_TEXT = {
+    'c++': 'C++',
+    cpp: 'C++',
+    'c#': 'C#',
+    csharp: 'C#',
+    python: 'Python',
+    python3: 'Python',
+    py: 'Python',
+    java: 'Java',
+    javascript: 'JavaScript',
+    js: 'JavaScript',
+    typescript: 'TypeScript',
+    ts: 'TypeScript',
+    go: 'Go',
+    golang: 'Go',
+    rust: 'Rust',
+    kotlin: 'Kotlin',
+    swift: 'Swift',
+    php: 'PHP',
+    ruby: 'Ruby',
+    scala: 'Scala'
+  };
+
+  function readPageLang() {
+    const ed = editorEl();
+    const edTop = ed ? ed.getBoundingClientRect().top + window.scrollY : null;
+    const host = Q.HOST_ID || '';
+
+    const found = new Set();
+    const sels = ['select', '[class*="lang"]', '[class*="Lang"]', '[role="combobox"]'];
+
+    for (const sel of sels) {
+      let list = [];
+      try {
+        list = document.querySelectorAll(sel);
+      } catch (e) {
+        continue;
+      }
+      const limit = Math.min(list.length, 300);
+      for (let i = 0; i < limit; i++) {
+        const el = list[i];
+        if (!isVisible(el)) continue;
+        try {
+          if (host && el.closest && el.closest('#' + host)) continue;
+        } catch (e) {}
+
+        // 离编辑器太远的多半是别的东西
+        if (edTop != null) {
+          const r = el.getBoundingClientRect();
+          if (Math.abs(r.top + window.scrollY - edTop) > 600) continue;
+        }
+
+        let t = '';
+        if (el.tagName === 'SELECT') {
+          const o = el.options && el.options[el.selectedIndex];
+          t = o ? oneLine(o.textContent) : '';
+        } else {
+          t = oneLine(el.innerText == null ? el.textContent : el.innerText);
+        }
+        if (!t || t.length > 14) continue;
+
+        const norm = LANG_TEXT[t.toLowerCase().replace(/\s+/g, '')];
+        if (!norm) continue;
+        found.add(norm);
+        if (found.size > 1) return ''; // 页面上同时出现多个语言名，别猜
+      }
+      if (found.size === 1) return [...found][0];
+    }
+    return found.size === 1 ? [...found][0] : '';
+  }
+
   /* ---------------- 调模型 ---------------- */
 
   async function solveCodeQ(q) {
     if (!Q.sendBg) throw new Error('发送模块还没加载');
+
+    // 先用主世界读一遍完整代码当模板，DOM 里那份可能被截断
+    const full = await readEditorCode();
+    if (full.ok && full.code.trim()) {
+      const prev = String(q.template || '');
+      if (full.code.trim().length >= prev.trim().length) q.template = full.code;
+      if (!q.lang) q.lang = guessLang(q.template);
+    }
+    q.pageLang = readPageLang() || '';
+
     const resp = await Q.sendBg({ type: 'QC_CODE', text: buildCodePrompt(q) });
     if (!resp || !resp.ok) throw new Error((resp && resp.error) || '调用失败');
 
     const r = parseCodeReply(resp.text || '');
     q.answer = r.code;
     q.reason = r.reason;
-    q.codeLang = r.lang || q.lang || '';
+    q.codeLang = r.lang || q.forceLang || q.lang || '';
     q.fillState = '';
     if (resp.usage && Q.S) Q.S.lastUsage = resp.usage;
     return r;
@@ -382,14 +484,11 @@
 
   /* ---------------- 写进编辑器 ---------------- */
 
-  async function writeCode(q) {
-    const code = String((q && q.answer) || '').trim();
-    if (!code) return '还没有生成代码';
+  async function pushCode(code) {
     if (!Q.sendBg) return '发送模块还没加载';
-
     let resp;
     try {
-      resp = await Q.sendBg({ type: 'QC_CODE_WRITE', code });
+      resp = await Q.sendBg({ type: 'QC_CODE_WRITE', code: String(code == null ? '' : code) });
     } catch (e) {
       return String((e && e.message) || e);
     }
@@ -399,11 +498,40 @@
     return '';
   }
 
+  async function writeCode(q) {
+    const code = String((q && q.answer) || '').trim();
+    if (!code) return '还没有生成代码';
+
+    // 写之前先留一份原件，「还原」要靠它
+    let cur = '';
+    try {
+      const r = await readEditorCode();
+      if (r.ok) cur = String(r.code || '');
+    } catch (e) {}
+
+    const err = await pushCode(code);
+    if (!err && cur.trim() && cur.trim() !== code) q.prevCode = cur;
+    return err;
+  }
+
+  async function restoreCode(q) {
+    const prev = String((q && q.prevCode) || '');
+    if (!prev.trim()) return '没有可还原的内容';
+    const err = await pushCode(prev);
+    if (!err) {
+      q.prevCode = '';
+      q.fillState = 'ok';
+    }
+    return err;
+  }
+
   Object.assign(Q, {
     editorEl,
     readTemplate,
     readStem,
     readTitle,
+    readEditorCode,
+    readPageLang,
     guessLang,
     normLang,
     langTag,
@@ -411,6 +539,8 @@
     buildCodePrompt,
     parseCodeReply,
     solveCodeQ,
-    writeCode
+    pushCode,
+    writeCode,
+    restoreCode
   });
 })();

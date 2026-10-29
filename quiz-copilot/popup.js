@@ -11,7 +11,8 @@
     chatLevel: 2,
     showFab: true,
     selExplain: true,
-    botSkin: 'blue'
+    botSkin: 'blue',
+    copyFormat: 'plain'
   };
 
   const PRESETS = {
@@ -85,6 +86,7 @@
     $('swFab').classList.toggle('on', cfg.showFab !== false);
     $('swSel').classList.toggle('on', cfg.selExplain !== false);
     $('skin').value = cfg.botSkin || 'blue';
+    $('copyFormat').value = cfg.copyFormat || 'plain';
     adaptLayout();
   });
 
@@ -135,6 +137,10 @@
     chrome.storage.sync.set({ botSkin: e.target.value });
   });
 
+  $('copyFormat').addEventListener('change', (e) => {
+    chrome.storage.sync.set({ copyFormat: e.target.value });
+  });
+
   /* ---------- 保存 ---------- */
   $('save').addEventListener('click', () => {
     const apiKey = $('apiKey').value.trim();
@@ -156,7 +162,8 @@
         chatLevel: Number($('chatLevel').value),
         showFab: $('swFab').classList.contains('on'),
         selExplain: $('swSel').classList.contains('on'),
-        botSkin: $('skin').value
+        botSkin: $('skin').value,
+        copyFormat: $('copyFormat').value
       },
       () => {
         if (chrome.runtime.lastError) {
