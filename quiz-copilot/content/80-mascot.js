@@ -16,6 +16,11 @@
     touch-action: none; user-select: none;
     --qc-a: #4b86ff; --qc-b: #6b5cf0; --qc-glow: rgba(59,123,255,.4);
   }
+  /* 它本质是个 <button>：按住拖动会拿到焦点，浏览器于是在外面画一圈黑框，
+     点别处才消失，再拖又出来。桌宠不需要这个焦点框，直接去掉。 */
+  .qc-bot:focus,
+  .qc-bot:focus-visible { outline: none; }
+
   /* 皮肤只换机身的两个渐变色，状态色（绿/黄/红）优先级更高 */
   .qc-bot[data-skin="mint"] { --qc-a: #2fd6a4; --qc-b: #0f9d78; --qc-glow: rgba(47,214,164,.38); }
   .qc-bot[data-skin="peach"] { --qc-a: #ff9d78; --qc-b: #ef5f5f; --qc-glow: rgba(255,140,110,.38); }

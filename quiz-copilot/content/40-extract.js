@@ -197,12 +197,20 @@
   }
 
   function extractAll() {
+    const kind = pageKind();
     const choice = extractFromInputs();
     const blanks = extractBlanks();
     const matches = extractMatches();
     let list = choice.concat(blanks, matches);
 
-    if (!list.length) {
+    /* 判题页（有 Monaco / CodeMirror 这类代码编辑器）：填空和论述一律不要。
+       这类页面根本没有「填答案」这回事，硬读出来的只会是编辑器里的碎片。
+       选择题保留——万一某个课程页同时放了测验和代码练习。 */
+    if (kind === 'code-judge') {
+      list = list.filter((q) => q.type !== 'blank' && q.type !== 'essay');
+    }
+
+    if (!list.length && kind !== 'code-judge') {
       list = parseTextToQuestions(document.body.innerText || '');
     }
 

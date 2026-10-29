@@ -163,7 +163,7 @@
 
   <div class="card">
     <h2><span class="num">2</span>怎么确认更新已经生效</h2>
-    <p>面板标题右边有一个小徽标，写着当前版本号，例如 <code>v1.19.1</code>。这个数字是插件运行时直接读自己 manifest 得来的，不会骗人。</p>
+    <p>面板标题右边有一个小徽标，写着当前版本号，例如 <code>v1.19.2</code>。这个数字是插件运行时直接读自己 manifest 得来的，不会骗人。</p>
     <p><b>如果你看到的还是旧版本号，或者工具栏里没有「诊断」按钮</b>，说明页面里跑的还是旧代码，按这个顺序操作：</p>
     <ol>
       <li>地址栏输入 <code>edge://extensions</code>（Chrome 用 <code>chrome://extensions</code>）</li>
@@ -459,6 +459,13 @@
     <h2>更新日志</h2>
     <p>每个版本改了什么，完整版见仓库根目录的 <code>CHANGELOG.md</code>。下面是最新的几条。</p>
     <details open>
+      <summary>v1.19.2 · 2026-10-29</summary>
+      <ul>
+        <li><b>修复</b>：编程题页面仍被读成填空题——改成页面级兜底，判题页一律不产出填空和论述</li>
+        <li><b>修复</b>：拖动小机器人时外面出现一圈黑框（按钮的焦点框）</li>
+      </ul>
+    </details>
+    <details>
       <summary>v1.19.1 · 2026-10-29</summary>
       <ul>
         <li><b>修复</b>：编程题页面被误判成填空题（Monaco 的隐藏输入框溜过了检查），还会拼出「nums = ___ target = ___」这种假题干</li>
