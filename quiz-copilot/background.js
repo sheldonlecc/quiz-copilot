@@ -55,6 +55,27 @@ const EXPLAIN_PROMPT = [
   '6. 只输出解释正文，不要用 markdown 标题、不要加“解释：”前缀。'
 ].join('\n');
 
+/* 编程题用的提示词：要的是「思路 + 一段能直接提交的代码」，不走 JSON */
+const CODE_PROMPT = [
+  '你是一个编程题的解题助手。用户会给你一道在线判题平台的题目，可能还附带编辑器里已有的代码模板。',
+  '',
+  '输出格式（必须严格遵守，不要输出 JSON，不要输出任何别的东西）：',
+  '思路：<3-5 句话，先说用什么算法或数据结构，再说为什么，最后一句说明边界情况怎么处理>',
+  '复杂度：时间 O(...)，空间 O(...)',
+  '```',
+  '<完整代码>',
+  '```',
+  '',
+  '要求：',
+  '1. 代码必须完整、可直接提交：需要 include / import 的写上；模板里给出的函数名、类名、参数不要改；',
+  '2. 模板是「函数题」（已经给了 class Solution / def 之类）就只补全函数体，不要写 main、不要写输入输出；',
+  '   没有模板或模板为空时按「ACM 模式」写完整程序（自己读输入、自己输出）；',
+  '3. 不要写测试用例、不要打印调试信息、不要留 TODO；',
+  '4. 关键步骤写一句注释即可，不要整段注释，也不要把解释写进代码；',
+  '5. 空输入、单元素、负数、溢出这类边界自己处理，并在「思路」里点一句；',
+  '6. 题目信息缺失（输入范围、返回格式没给全）时按最常见约定实现，并在「思路」最后一句写明你的假设。'
+].join('\n');
+
 /* ---------------- 配置 ---------------- */
 
 async function getConfig() {
@@ -289,6 +310,41 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === 'QC_CODE') {
+    (async () => {
+      try {
+        const r = await callChatPlain(msg.text, CODE_PROMPT, 120000);
+        sendResponse({ ok: true, text: r.content, usage: r.usage });
+      } catch (e) {
+        sendResponse({ ok: false, error: String(e && e.message || e) });
+      }
+    })();
+    return true;
+  }
+
+  /* 写进代码编辑器：Monaco 的 model 只存在于页面主世界，
+     content script 在隔离环境里碰不到，只能从这儿注入进去。 */
+  if (msg.type === 'QC_CODE_WRITE') {
+    (async () => {
+      try {
+        const tabId = sender && sender.tab && sender.tab.id;
+        if (!tabId) throw new Error('拿不到当前标签页');
+        const results = await chrome.scripting.executeScript({
+          target: { tabId, allFrames: false },
+          world: 'MAIN',
+          func: qcWriteCodeInPage,
+          args: [String(msg.code || '')]
+        });
+        const r = results && results[0] && results[0].result;
+        if (!r || !r.ok) throw new Error((r && r.note) || '页面里的编辑器没有接受写入');
+        sendResponse({ ok: true, how: r.how, verified: !!r.verified });
+      } catch (e) {
+        sendResponse({ ok: false, error: String(e && e.message || e) });
+      }
+    })();
+    return true;
+  }
+
   if (msg.type === 'QC_TEST') {
     (async () => {
       try {
@@ -334,3 +390,152 @@ chrome.runtime.onInstalled.addListener((details) => {
     chrome.tabs.create({ url: chrome.runtime.getURL('popup.html') }).catch(() => {});
   }
 });
+
+/* ============================================================
+ * 注入到页面主世界执行的函数：把代码写进编辑器
+ * 注意：这个函数会被序列化后送进页面，不能引用外部变量
+ * ============================================================ */
+function qcWriteCodeInPage(code) {
+  const SEL = '.monaco-editor, .monaco-diff-editor, .cm-editor, .CodeMirror, .ace_editor';
+  const text = String(code == null ? '' : code);
+
+  const vis = (el) => {
+    if (!el || !el.isConnected) return false;
+    const r = el.getBoundingClientRect();
+    if (r.width < 24 || r.height < 24) return false;
+    const cs = window.getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false;
+    return true;
+  };
+
+  const nodes = Array.prototype.slice.call(document.querySelectorAll(SEL)).filter(vis);
+  if (!nodes.length) return { ok: false, note: '页面上没找到可见的代码编辑器' };
+  nodes.sort((a, b) => b.offsetWidth * b.offsetHeight - a.offsetWidth * a.offsetHeight);
+  const el = nodes[0];
+
+  const norm = (s) => String(s || '').replace(/\s+/g, '');
+
+  const readBack = () => {
+    const box =
+      el.querySelector('.view-lines') ||
+      el.querySelector('.cm-content') ||
+      el.querySelector('.CodeMirror-code') ||
+      el.querySelector('.ace_text-layer') ||
+      el;
+    return String(box.innerText || box.textContent || '');
+  };
+
+  const done = (how) => {
+    let got = '';
+    try {
+      got = norm(readBack());
+    } catch (e) {}
+    const want = norm(text);
+    const verified = !!got && (got.indexOf(want.slice(0, 40)) >= 0 || want.indexOf(got.slice(0, 40)) >= 0);
+    return { ok: true, how: how, verified: verified };
+  };
+
+  /* 1) Monaco：直接改 model，最稳 */
+  try {
+    const m = window.monaco;
+    if (m && m.editor && m.editor.getEditors) {
+      const dom = el.closest('.monaco-editor') || el;
+      const eds = m.editor.getEditors() || [];
+      for (let i = 0; i < eds.length; i++) {
+        let node = null;
+        try {
+          node = eds[i].getDomNode();
+        } catch (e) {
+          node = null;
+        }
+        if (!node || !vis(node)) continue;
+        if (node === dom || node.contains(dom) || dom.contains(node)) {
+          eds[i].setValue(text);
+          try {
+            eds[i].focus();
+          } catch (e) {}
+          return done('monaco');
+        }
+      }
+      // DOM 对不上：按语言挑一个 model，避开纯文本的「测试用例」编辑器
+      try {
+        const models = (m.editor.getModels && m.editor.getModels()) || [];
+        const codeLang = /^(cpp|c\+\+|python|java|javascript|typescript|go|rust|c|cs|csharp|kotlin|swift|php|ruby)$/i;
+        let target = null;
+        for (let i = 0; i < models.length; i++) {
+          const mo = models[i];
+          if (mo && codeLang.test(String(mo.getLanguageId ? mo.getLanguageId() : ''))) target = mo;
+        }
+        if (target) {
+          target.setValue(text);
+          return done('monaco-model');
+        }
+      } catch (e) {}
+    }
+  } catch (e) {}
+
+  /* 2) Ace */
+  try {
+    if (window.ace && window.ace.edit) {
+      const box = el.closest('.ace_editor') || el;
+      const ed = window.ace.edit(box);
+      ed.setValue(text, -1);
+      try {
+        ed.clearSelection();
+      } catch (e) {}
+      return done('ace');
+    }
+  } catch (e) {}
+
+  /* 3) CodeMirror 5：实例挂在 wrapper 上 */
+  try {
+    const wrap = el.closest('.CodeMirror') || el;
+    if (wrap && wrap.CodeMirror && wrap.CodeMirror.setValue) {
+      wrap.CodeMirror.setValue(text);
+      return done('codemirror5');
+    }
+  } catch (e) {}
+
+  /* 4) 可编辑区（CodeMirror 6 / 自研编辑器）：走真实输入，编辑器才会记账 */
+  try {
+    const content = el.querySelector('.cm-content') || (el.isContentEditable ? el : null);
+    if (content) {
+      content.focus();
+      const sel = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(content);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      let ok = false;
+      try {
+        ok = document.execCommand('insertText', false, text);
+      } catch (e) {
+        ok = false;
+      }
+      if (!ok) {
+        const dt = new DataTransfer();
+        dt.setData('text/plain', text);
+        content.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+      }
+      return done('editable');
+    }
+  } catch (e) {}
+
+  /* 5) 兜底：往编辑器的隐藏 textarea 上派发粘贴 */
+  try {
+    const ta = el.querySelector('textarea.inputarea') || el.querySelector('textarea');
+    if (ta) {
+      ta.focus();
+      ta.select();
+      const dt = new DataTransfer();
+      dt.setData('text/plain', text);
+      const ev = new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true });
+      ta.dispatchEvent(ev);
+      if (!ev.defaultPrevented) document.execCommand('insertText', false, text);
+      return done('paste');
+    }
+  } catch (e) {}
+
+  return { ok: false, note: '这个编辑器不认自动写入，用「复制代码」手动粘贴' };
+}
+

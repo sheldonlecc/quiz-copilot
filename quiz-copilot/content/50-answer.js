@@ -192,7 +192,7 @@
 
   /* 用于展示/复制的答案文本 */
   function answerDisplay(q) {
-    if (q.type === 'essay') return q.answer || '（未作答）';
+    if (q.type === 'essay' || q.type === 'code') return q.answer || '（未作答）';
     if (q.type === 'blank' || q.type === 'match' || q.type === 'matrix') {
       const parts = splitBlankAnswer(q.answer);
       if (!parts.length) return '（未作答）';
@@ -264,7 +264,30 @@
     return '';
   }
 
+  /* 编程题：写入是跨世界的异步操作，先当成功，结果回来再改状态 */
+  function fillCode(q) {
+    const code = String(q.answer || '').trim();
+    if (!code) return '还没有生成代码';
+    if (!Q.writeCode) return '写入模块没加载，点「复制代码」手动粘贴';
+
+    q.fillState = 'writing';
+    Q.writeCode(q).then(
+      (err) => {
+        q.fillState = err ? 'fail' : 'ok';
+        setStatus(err ? `第 ${q.index} 题：${err}` : `第 ${q.index} 题：代码已写进编辑器，先跑一遍再提交。`, err ? 'warn' : 'ok');
+        render();
+      },
+      (e) => {
+        q.fillState = 'fail';
+        setStatus(`第 ${q.index} 题：${String((e && e.message) || e)}`, 'warn');
+        render();
+      }
+    );
+    return '';
+  }
+
   function fillOne(q) {
+    if (q.type === 'code') return fillCode(q);
     if (q.type === 'essay') return fillEssay(q);
     if (q.type === 'blank' || q.type === 'match' || q.type === 'matrix') return fillBlank(q);
 
@@ -341,7 +364,8 @@
       if (!q.answer) return;
       answered++;
       const err = fillOne(q);
-      q.fillState = err ? 'fail' : 'ok';
+      // 编程题是异步写入，成功与否等回调自己改，别在这里抢先盖掉
+      if (q.type !== 'code') q.fillState = err ? 'fail' : 'ok';
       if (err) failCount++;
       else okCount++;
     });
@@ -357,5 +381,5 @@
     return { ok: okCount, total: answered, fail: failCount };
   }
 
-  Object.assign(Q, { targetOptions, clickInput, splitBlankAnswer, setNativeValue, answerDisplay, pickSelectOption, setSelectValue, fillBlank, fillOne, fillEssay, setEssayValue, readEssay, toEssayHtml, buildTextIndex, findClickableByText, fillAll });
+  Object.assign(Q, { targetOptions, clickInput, splitBlankAnswer, setNativeValue, answerDisplay, pickSelectOption, setSelectValue, fillBlank, fillOne, fillCode, fillEssay, setEssayValue, readEssay, toEssayHtml, buildTextIndex, findClickableByText, fillAll });
 })();

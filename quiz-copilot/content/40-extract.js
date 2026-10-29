@@ -51,7 +51,7 @@
       return '这是课程的「活动列表」页，不是测验页——这里只有学习任务，没有题目。请点进标着 Quiz 的那一项，进入 attempt.php 再读。';
     }
     if (kind === 'code-judge') {
-      return '这页是编程题：答案是写进右边代码编辑器的一段代码，不是填空或选择，我填不进去。想让我帮忙的话，选中题目文字用「解释这段」讲思路。';
+      return '这页是编程题（右边有代码编辑器）。点「读取并解答」，我会把题面读出来生成解法，再点「写入编辑器」；写不进去也能「复制代码」自己粘。';
     }
     let raw = 0;
     let ok = 0;
@@ -88,6 +88,22 @@
     if (fr.total) {
       push(`页面内 iframe：共 ${fr.total} 个，其中同源可读 ${fr.readable} 个` +
         (fr.total > fr.readable ? '（跨域的读不到，题目若在跨域框架里就用「读取选中文字」）' : ''));
+    }
+
+    /* 判题页多给三行：编辑器认没认出来、模板读到没、题面读到没 */
+    if (kind === 'code-judge' && Q.extractCode) {
+      let ed = null;
+      let tpl = '';
+      let got = [];
+      try {
+        ed = Q.editorEl ? Q.editorEl() : null;
+        tpl = Q.readTemplate ? Q.readTemplate() : '';
+        got = Q.extractCode();
+      } catch (e) {}
+      push('代码编辑器：' + (ed ? '找到（' + String(ed.className || '').split(/\s+/).slice(0, 2).join('.') + '）' : '没找到'));
+      push('编辑器里的模板：' +
+        (tpl ? tpl.length + ' 字符，语言猜测 ' + (Q.guessLang(tpl) || '未知') : '读不到（只是少一条线索，不影响生成）'));
+      push('读到的题面：' + (got.length ? got[0].stem.length + ' 字符' : '没读到'));
     }
     push('');
 
@@ -158,10 +174,9 @@
         push('  · 这是课程的活动列表页，不是测验页。这里的勾选框是「完成状态」，不是选项。');
         push('  · 请点进标着 Quiz 的那一项，进入 attempt.php 之后再读取。');
       } else if (kind === 'code-judge') {
-        push('  · 这页是编程题（页面右侧有代码编辑器），答案是写进编辑器的一段代码。');
-        push('  · 插件只处理填空 / 选择 / 判断这类表单题，没有「替你写代码」这条路，');
-        push('    所以这里一道题都不产出是故意的，不是没读出来。');
-        push('  · 想让它帮忙：选中题目文字，点「解释这段」，让它讲思路。');
+        push('  · 这页是编程题，但题面没读出来（题目可能还在加载，或者面板是懒渲染的）。');
+        push('  · 先把页面上滚一点让题目完整出现，再点「读取并解答」；');
+        push('    实在不行就框选题面文字，点「读取选中文字」。');
       } else if (readOnlyCount > 0) {
         push(`  · 有 ${readOnlyCount} 个答题框是只读/禁用的，这份卷子看起来已经交过卷。`);
         push('  · 请确认打开的是尚未提交的 attempt.php 页面。');
@@ -210,9 +225,11 @@
 
     /* 判题页（有 Monaco / CodeMirror 这类代码编辑器）：填空和论述一律不要。
        这类页面根本没有「填答案」这回事，硬读出来的只会是编辑器里的碎片。
-       选择题保留——万一某个课程页同时放了测验和代码练习。 */
+       改由 extractCode() 把整页当成一道编程题来读。选择题保留——万一某个课程页
+       同时放了测验和代码练习。 */
     if (kind === 'code-judge') {
       list = list.filter((q) => q.type !== 'blank' && q.type !== 'essay');
+      if (Q.extractCode) list = Q.extractCode().concat(list);
     }
 
     if (!list.length && kind !== 'code-judge') {

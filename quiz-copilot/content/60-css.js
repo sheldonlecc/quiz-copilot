@@ -193,6 +193,37 @@
     white-space: pre-wrap; word-break: break-word;
   }
 
+  /* 编程题：语言 + 行数，代码块自己滚 */
+  .qc-code {
+    background: rgba(79,140,255,.06);
+    border: 1px solid rgba(79,140,255,.2);
+    border-radius: 8px;
+    padding: 6px 9px 7px;
+    margin-bottom: 6px;
+  }
+  .qc-code.empty { background: rgba(251,191,36,.05); border-color: rgba(251,191,36,.2); }
+  .qc-code-meta {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11.5px; color: #8fb6e6; margin-bottom: 5px;
+  }
+  .qc-code-lang {
+    font-size: 10.5px; font-weight: 600; color: #9dc0ff;
+    background: rgba(79,140,255,.16); border-radius: 4px;
+    padding: 0 6px; line-height: 17px;
+  }
+  .qc-code-meta .qc-mini { margin-left: auto; }
+  .qc-code-pre {
+    margin: 0; max-height: 220px; overflow: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px; line-height: 1.55; color: #d7e3f4;
+    white-space: pre; tab-size: 2;
+  }
+  .qc-reason.pre { white-space: pre-line; }
+  .qc-stem.open {
+    display: block; -webkit-line-clamp: unset;
+    max-height: 240px; overflow: auto; white-space: pre-wrap;
+  }
+
   .qc-band-row { display: flex; gap: 7px; width: 100%; font-size: 12.5px; }
   .qc-band-row + .qc-band-row { margin-top: 4px; }
   .qc-band-n { color: #6ee7a8; font-weight: 600; flex: 0 0 auto; min-width: 12px; }

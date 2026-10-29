@@ -54,7 +54,7 @@
         // 气泡只说结论，具体原因放在面板里，别把一整段诊断塞进气泡
         const kind = Q.pageKind ? Q.pageKind() : 'generic';
         bot.say(
-          kind === 'code-judge' ? '这页是编程题，我填不了' : '这页没认出题目，点这里看原因',
+          kind === 'code-judge' ? '这页是编程题，但题面没读到' : '这页没认出题目，点这里看原因',
           9000,
           true
         );
@@ -109,7 +109,11 @@
         bot.settleAfter(4200);
       } else {
         bot.setState('done');
-        bot.say(`已填 ${st2.ok} 题，点这里核对`, 0, true);
+        bot.say(
+          S.questions.some((q) => q.type === 'code') ? '代码写进去了，先跑一遍' : `已填 ${st2.ok} 题，点这里核对`,
+          0,
+          true
+        );
         bot.settleAfter(4200);
       }
     } catch (e) {

@@ -22,6 +22,11 @@
       .map((q) => {
         const head = `第${q.index}题【${TYPE_CN[q.type] || '单选'}】`;
 
+        // 编程题走独立通道（QC_CODE），这里只是防御性兜底
+        if (q.type === 'code') {
+          return `${head}\n${q.stem}\n（直接给出完整可提交的代码）`;
+        }
+
         if (q.type === 'matrix') {
           const rows = q.rows || [];
           const cols = (q.cols || []).filter(Boolean);
@@ -145,39 +150,64 @@
     render();
 
     try {
-      const resp = await sendBg({ type: 'QC_SOLVE', text: buildPrompt(S.questions) });
-      if (!resp || !resp.ok) throw new Error((resp && resp.error) || '调用失败');
+      /* 编程题和表单题走两条通道：前者要整段代码，塞进 JSON 里容易被转义毁掉 */
+      const normal = S.questions.filter((q) => q.type !== 'code');
+      const codes = S.questions.filter((q) => q.type === 'code');
 
-      const byIndex = new Map();
-      (resp.answers || []).forEach((a) => byIndex.set(Number(a.index), a));
+      if (normal.length) {
+        const resp = await sendBg({ type: 'QC_SOLVE', text: buildPrompt(normal) });
+        if (!resp || !resp.ok) throw new Error((resp && resp.error) || '调用失败');
 
-      S.questions.forEach((q, i) => {
-        const a = byIndex.get(q.index) || resp.answers[i] || null;
-        q.answer = a ? a.answer : '';
-        q.reason = a ? a.reason : '';
-        q.fillState = '';
+        const byIndex = new Map();
+        (resp.answers || []).forEach((a) => byIndex.set(Number(a.index), a));
 
-        // 模型自己都说「不知道」，就别把猜出来的数字填进页面（个人作息、收入这类）
-        if ((q.type === 'blank' || q.type === 'matrix') && q.answer) {
-          const parts = Q.splitBlankAnswer ? Q.splitBlankAnswer(q.answer) : [q.answer];
-          const unsure = REFUSE.test(q.reason) || REFUSE.test(q.answer);
-          if (unsure && parts.length <= 1) {
-            q.reason = q.reason || q.answer;
-            q.answer = '';
+        normal.forEach((q, i) => {
+          const a = byIndex.get(q.index) || resp.answers[i] || null;
+          q.answer = a ? a.answer : '';
+          q.reason = a ? a.reason : '';
+          q.fillState = '';
+
+          // 模型自己都说「不知道」，就别把猜出来的数字填进页面（个人作息、收入这类）
+          if ((q.type === 'blank' || q.type === 'matrix') && q.answer) {
+            const parts = Q.splitBlankAnswer ? Q.splitBlankAnswer(q.answer) : [q.answer];
+            const unsure = REFUSE.test(q.reason) || REFUSE.test(q.answer);
+            if (unsure && parts.length <= 1) {
+              q.reason = q.reason || q.answer;
+              q.answer = '';
+            }
           }
-        }
 
-        // 答案和解析对不上时留个记号，面板会标出来，也能一键改用解析里的值
-        q.conflict = numericConflict(q);
-      });
+          // 答案和解析对不上时留个记号，面板会标出来，也能一键改用解析里的值
+          q.conflict = numericConflict(q);
+        });
+
+        S.lastUsage = resp.usage || null;
+      }
+
+      let codeErr = '';
+      for (const q of codes) {
+        setStatus('正在读题并写代码…', 'busy');
+        try {
+          if (!Q.solveCodeQ) throw new Error('编程题模块没加载，重新加载扩展再试');
+          await Q.solveCodeQ(q);
+        } catch (e) {
+          codeErr = String((e && e.message) || e);
+          q.answer = '';
+          q.reason = codeErr;
+          q.fillState = '';
+        }
+      }
 
       const missing = S.questions.filter((q) => !q.answer).length;
-      S.lastUsage = resp.usage || null;
       setStatus(
-        missing
+        codeErr
+          ? `代码没生成出来：${codeErr.slice(0, 70)}`
+          : missing
           ? `完成，但有 ${missing} 道题没拿到答案，可点「重新作答」。`
+          : codes.length
+          ? `已生成代码（${codes[0].codeLang || '待确认语言'}）。先看思路，再点「写入编辑器」。`
           : `已作答 ${S.questions.length} 道题。`,
-        missing ? 'warn' : 'ok'
+        codeErr || missing ? 'warn' : 'ok'
       );
 
       if (allowAutoFill && S.autoFill) {

@@ -23,6 +23,26 @@
 
   const clampNum = (v, a, b) => Math.max(a, Math.min(b, v));
 
+  /* 编程题：思路一行字，代码一整块，能滚能复制 */
+  function codeBand(q) {
+    const code = String(q.answer || '');
+    const lang = esc(q.codeLang || q.lang || '代码');
+    if (!code) {
+      return `<div class="qc-code empty">
+        <div class="qc-code-meta"><span class="qc-code-lang">${lang}</span><span>还没生成</span></div>
+      </div>`;
+    }
+    const lines = code.split('\n').length;
+    return `<div class="qc-code">
+      <div class="qc-code-meta">
+        <span class="qc-code-lang">${lang}</span>
+        <span>${lines} 行 · ${code.length} 字符</span>
+        <button class="qc-mini" data-act="copy-code" data-idx="${q.index}">复制代码</button>
+      </div>
+      <pre class="qc-code-pre">${esc(code)}</pre>
+    </div>`;
+  }
+
   /* ---------- 浮窗拖动：拖标题栏移动，位置记在本地 ---------- */
   function makeDraggable(box, handle, key) {
     if (!box || !handle || handle.dataset.dragBound === '1') return;
@@ -150,7 +170,10 @@
           const isBlank = q.type === 'blank' || q.type === 'match' || q.type === 'matrix';
 
           let band = '';
-          if (!q.answer) {
+          if (q.type === 'code') {
+            // 编程题没答案时也要显示语言，别只丢一句「未作答」
+            band = codeBand(q);
+          } else if (!q.answer) {
             band = `<div class="qc-band empty"><span class="qc-band-k">未作答</span></div>`;
           } else if (q.type === 'essay') {
             const raw = String(q.answer);
@@ -200,16 +223,17 @@
               <span class="qc-idx">${q.index}</span>
               <span class="qc-type">${TYPE_CN[q.type] || '单选'}</span>
             </div>
-            <div class="qc-stem">${esc(q.stem)}</div>
+            <div class="qc-stem ${q.stemOpen ? 'open' : ''}">${esc(q.stem)}</div>
             ${band}
             ${q.conflict ? `<div class="qc-conflict">
               <span>解析算出 <b>${esc(q.conflict.suggest)}</b>，答案却是 <b>${esc(q.conflict.answer)}</b></span>
               <button class="qc-mini" data-act="use-suggest" data-idx="${q.index}">用 ${esc(q.conflict.suggest)}</button>
             </div>` : ''}
-            ${q.reason ? `<div class="qc-reason">${esc(q.reason)}</div>` : ''}
+            ${q.reason ? `<div class="qc-reason ${q.type === 'code' ? 'pre' : ''}">${esc(q.reason)}</div>` : ''}
             <div class="qc-card-acts">
-              <button class="qc-mini" data-act="fill-one" data-idx="${q.index}">填入本题</button>
-              <button class="qc-mini" data-act="copy-one" data-idx="${q.index}">复制</button>
+              <button class="qc-mini" data-act="fill-one" data-idx="${q.index}">${q.type === 'code' ? '写入编辑器' : '填入本题'}</button>
+              <button class="qc-mini" data-act="${q.type === 'code' ? 'copy-code' : 'copy-one'}" data-idx="${q.index}">${q.type === 'code' ? '复制代码' : '复制'}</button>
+              ${q.type === 'code' ? `<button class="qc-mini" data-act="toggle-stem" data-idx="${q.index}">${q.stemOpen ? '收起题目' : '展开题目'}</button>` : ''}
             </div>
           </div>`;
         })
@@ -375,6 +399,21 @@
     if (act === 'copy-full') {
       const q = S.questions.find((x) => x.index === idx);
       if (q) copyText(String(q.answer || ''));
+      return;
+    }
+
+    if (act === 'copy-code') {
+      const q = S.questions.find((x) => x.index === idx);
+      if (q) copyText(String(q.answer || ''));
+      return;
+    }
+
+    if (act === 'toggle-stem') {
+      const q = S.questions.find((x) => x.index === idx);
+      if (q) {
+        q.stemOpen = !q.stemOpen;
+        render();
+      }
       return;
     }
 
