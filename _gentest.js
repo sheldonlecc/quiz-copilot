@@ -89,6 +89,25 @@ ${scripts}
   }
 
   async function run() {
+    /* 截图模式：#shot:thinking / done / confused / menu，只看某一帧长什么样 */
+    var shot = (location.hash || '').replace('#shot:', '');
+    if (shot) {
+      var shotTries = 0;
+      var shotTimer = setInterval(function () {
+        var M = Q.mascot;
+        if (!M || !M.getEl()) {
+          if (++shotTries > 80) clearInterval(shotTimer);
+          return;
+        }
+        clearInterval(shotTimer);
+        if (shot === 'thinking') M.setState('thinking');
+        else if (shot === 'done') M.setState('done');
+        else if (shot === 'confused') M.setMood('confused', 8000);
+        else if (shot === 'menu') { M.peekMenu(true); if (Q.menu) Q.menu.open(); }
+      }, 100);
+      return;
+    }
+
     await sleep(350);
     Q.S.chatLevel = 0;   // 测试期间别让机器人插话，避免把气泡顶掉
 
@@ -167,6 +186,20 @@ ${scripts}
     rec('tilt eases out', bot.dataset.tilt === 'out', String(bot.dataset.tilt));
     await sleep(560);
     rec('tilt cleaned', !bot.dataset.tilt, String(bot.dataset.tilt));
+
+    /* 5c. 右键机器人：菜单弹出 + 它探头看一眼
+       （这动作曾经因为 head 的呼吸动画占着 transform 而完全失效） */
+    bot.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    await sleep(90);
+    var srCtx = byId('quiz-copilot-host').shadowRoot;
+    rec('right-click opens menu', !!srCtx.querySelector('.qc-menu'));
+    rec('right-click makes bot peek', bot.dataset.lookmenu === '1', String(bot.dataset.lookmenu));
+    rec('peek animates head (not overridden)',
+      getComputedStyle(bot.querySelector('.qc-bot-head')).animationName === 'qc-tilt-menu',
+      getComputedStyle(bot.querySelector('.qc-bot-head')).animationName);
+    Q.menu.close();
+    await sleep(70);
+    rec('closing menu clears peek', !bot.dataset.lookmenu);
 
     /* 6. 右键菜单 */
     Q.S.autoFill = true;
@@ -408,6 +441,9 @@ ${scripts}
     await sleep(50);
     rec('thinking shows page flip', getComputedStyle(botEl2.querySelector('.qc-bot-pages')).opacity === '1',
       getComputedStyle(botEl2.querySelector('.qc-bot-pages')).opacity);
+    rec('page flip is slow enough',
+      parseFloat(getComputedStyle(botEl2.querySelector('.qc-bot-pages i')).animationDuration) >= 2,
+      getComputedStyle(botEl2.querySelector('.qc-bot-pages i')).animationDuration);
     Q.mascot.setState('idle');
 
     Q.mascot.countTo(3);
@@ -429,6 +465,9 @@ ${scripts}
     rec('done stamps',
       getComputedStyle(botEl2.querySelector('.qc-bot-stamp')).animationName === 'qc-stamp',
       getComputedStyle(botEl2.querySelector('.qc-bot-stamp')).animationName);
+    rec('stamp holds long enough',
+      parseFloat(getComputedStyle(botEl2.querySelector('.qc-bot-stamp')).animationDuration) >= 1.8,
+      getComputedStyle(botEl2.querySelector('.qc-bot-stamp')).animationDuration);
     Q.mascot.setState('idle');
     await sleep(60);
 

@@ -628,29 +628,41 @@
     position: absolute; pointer-events: none; opacity: 0;
   }
 
-  /* ① 读题：头顶翻三页小纸片 */
+  /* ① 读题：头顶一本小册子，一页页翻过去
+     注意：head 上有无限动画占着 transform，想让它「歪/抬」必须也用 animation，
+     否则普通 transform 声明会被 animation 盖掉（这里踩过一次） */
   .qc-bot-pages {
-    top: -5px; left: 50%; margin-left: -10px; width: 20px; height: 12px;
-    perspective: 60px;
+    top: -6px; left: 50%; margin-left: -13px; width: 26px; height: 13px;
+    perspective: 90px;
   }
   .qc-bot-pages i {
-    position: absolute; top: 0; left: 0; width: 13px; height: 9px;
-    background: rgba(255,255,255,.88); border-radius: 2px;
+    position: absolute; top: 0; left: 0; width: 17px; height: 12px;
+    border-radius: 2px;
+    background:
+      repeating-linear-gradient(to bottom, rgba(70,95,140,.5) 0 1px, transparent 1px 3.4px),
+      linear-gradient(160deg, #fbfdff, #dfe8f8);
+    border: 1px solid rgba(70,95,140,.45);
+    box-shadow: 0 1px 3px rgba(0,0,0,.3), inset -1px 0 0 rgba(120,140,180,.35);
     transform-origin: 0 50%;
-    box-shadow: 0 1px 2px rgba(0,0,0,.28);
+    backface-visibility: hidden;
   }
-  .qc-bot-pages i:nth-child(2) { left: 4px; }
-  .qc-bot-pages i:nth-child(3) { left: 8px; }
+  .qc-bot-pages i:nth-child(1) { left: 1px; }
+  .qc-bot-pages i:nth-child(2) { left: 5px; }
+  .qc-bot-pages i:nth-child(3) { left: 9px; }
   .qc-bot[data-state="thinking"] .qc-bot-pages { opacity: 1; }
-  .qc-bot[data-state="thinking"] .qc-bot-pages i { animation: qc-page-flip 1.5s ease-in-out infinite; }
-  .qc-bot[data-state="thinking"] .qc-bot-pages i:nth-child(2) { animation-delay: .18s; }
-  .qc-bot[data-state="thinking"] .qc-bot-pages i:nth-child(3) { animation-delay: .36s; }
+  .qc-bot[data-state="thinking"] .qc-bot-pages i {
+    animation: qc-page-flip 2.4s cubic-bezier(.42,.05,.58,.95) infinite;
+  }
+  .qc-bot[data-state="thinking"] .qc-bot-pages i:nth-child(2) { animation-delay: .3s; }
+  .qc-bot[data-state="thinking"] .qc-bot-pages i:nth-child(3) { animation-delay: .6s; }
 
   @keyframes qc-page-flip {
-    0%   { transform: rotateY(0deg); opacity: .95; }
-    42%  { transform: rotateY(-155deg); opacity: .55; }
-    52%  { transform: rotateY(-155deg); opacity: 0; }
-    100% { transform: rotateY(0deg); opacity: 0; }
+    0%   { opacity: 0; transform: translate(0, 0) rotateY(0deg) rotateZ(0); }
+    4%   { opacity: 1; transform: translate(0, -1px) rotateY(0deg) rotateZ(0); }
+    24%  { opacity: 1; transform: translate(0, -3px) rotateY(-38deg) rotateZ(-4deg); }
+    38%  { opacity: .92; transform: translate(0, -4px) rotateY(-116deg) rotateZ(-7deg); }
+    45%  { opacity: 0; transform: translate(0, -4px) rotateY(-152deg) rotateZ(-7deg); }
+    100% { opacity: 0; transform: translate(0, 0) rotateY(0deg) rotateZ(0); }
   }
 
   /* ② 答完一题：头顶弹一个数字球 */
@@ -669,25 +681,33 @@
     100% { opacity: 0; transform: translateY(-14px) scale(.9); }
   }
 
-  /* ③ 收工：盖个章 */
+  /* ③ 收工：盖个章。章必须是白的——完成状态整个脑袋是绿的，绿章会隐身 */
   .qc-bot-stamp {
-    top: 11px; left: 50%; margin-left: -13px; width: 26px; height: 26px;
-    border: 2px solid rgba(110,231,168,.95); border-radius: 50%;
-    box-shadow: 0 0 10px rgba(110,231,168,.45), inset 0 0 6px rgba(110,231,168,.35);
+    top: -4px; left: -8px; width: 24px; height: 24px;
+    border: 2.5px solid rgba(255,255,255,.96); border-radius: 50%;
+    background: rgba(255,255,255,.14);
+    box-shadow: 0 1px 6px rgba(8,40,26,.35), inset 0 0 6px rgba(255,255,255,.4);
+  }
+  .qc-bot-stamp::before {
+    content: ''; position: absolute; inset: 2px;
+    border: 1px dashed rgba(255,255,255,.7); border-radius: 50%;
   }
   .qc-bot-stamp::after {
     content: '✓'; position: absolute; inset: 0;
     display: flex; align-items: center; justify-content: center;
-    color: #6ee7a8; font-size: 13px; font-weight: 700;
+    color: #0d5138; font-size: 11px; font-weight: 800;
   }
-  .qc-bot[data-state="done"] .qc-bot-stamp { animation: qc-stamp .8s cubic-bezier(.34,1.4,.64,1) both; }
+  .qc-bot[data-state="done"] .qc-bot-stamp { animation: qc-stamp 2s cubic-bezier(.34,1.4,.64,1) both; }
 
   @keyframes qc-stamp {
-    0%   { opacity: 0; transform: scale(1.7) rotate(-14deg); }
-    30%  { opacity: 1; transform: scale(.86) rotate(-6deg); }
-    44%  { transform: scale(1.04) rotate(-6deg); }
-    62%  { transform: scale(1) rotate(-6deg); opacity: 1; }
-    100% { transform: scale(1) rotate(-6deg); opacity: 0; }
+    0%   { opacity: 0; transform: scale(2.4) rotate(-26deg); }
+    10%  { opacity: 1; transform: scale(.82) rotate(-8deg); }
+    15%  { transform: scale(1.08) rotate(-13deg); }
+    20%  { transform: scale(1) rotate(-12deg); }
+    24%  { transform: scale(1.04) rotate(-12deg); }
+    28%  { transform: scale(1) rotate(-12deg); }
+    74%  { opacity: 1; transform: scale(1) rotate(-12deg); }
+    100% { opacity: 0; transform: scale(1.1) rotate(-12deg); }
   }
 
   /* ④ 填进页面：飞走一张小卡片 */
@@ -710,7 +730,14 @@
     color: #ffd98a; text-shadow: 0 1px 3px rgba(0,0,0,.45);
   }
   .qc-bot[data-mood="confused"] .qc-bot-qmark { animation: qc-qmark 1.7s ease-out both; }
-  .qc-bot[data-mood="confused"] .qc-bot-head { transform: rotate(12deg); }
+  /* 歪头必须写成 animation：head 上的呼吸动画占着 transform，普通声明会被盖掉 */
+  .qc-bot[data-mood="confused"] .qc-bot-head { animation: qc-tilt-confused .5s cubic-bezier(.34,1.4,.64,1) both; }
+
+  @keyframes qc-tilt-confused {
+    0%   { transform: scale(1) rotate(0deg); }
+    62%  { transform: scale(1) rotate(14deg); }
+    100% { transform: scale(1) rotate(12deg); }
+  }
 
   @keyframes qc-qmark {
     0%   { opacity: 0; transform: translateY(4px) scale(.5); }
@@ -788,11 +815,23 @@
   }
 
   /* ⑫ 菜单弹出：探头看一眼（菜单本来就在它左边，不用挪位置） */
-  .qc-bot[data-lookmenu="1"] .qc-bot-head { transform: rotate(-9deg) translateY(-1px); }
+  .qc-bot[data-lookmenu="1"] .qc-bot-head { animation: qc-tilt-menu .42s cubic-bezier(.34,1.4,.64,1) both; }
 
-  /* ⑬ 偷看头顶的计时牌：眼睛上瞟一下 */
+  @keyframes qc-tilt-menu {
+    0%   { transform: scale(1) rotate(0) translateY(0); }
+    68%  { transform: scale(1) rotate(-11deg) translateY(-1.6px); }
+    100% { transform: scale(1) rotate(-9deg) translateY(-1px); }
+  }
+
+  /* ⑬ 偷看头顶的计时牌：眼睛上瞟一下，头也跟着抬一点 */
   .qc-bot[data-mood="peek"] .qc-bot-eye { transform: translateY(-2px); }
-  .qc-bot[data-mood="peek"] .qc-bot-head { transform: rotate(-3deg) translateY(-1px); }
+  .qc-bot[data-mood="peek"] .qc-bot-head { animation: qc-tilt-peek .45s ease-out both; }
+
+  @keyframes qc-tilt-peek {
+    0%   { transform: scale(1) rotate(0) translateY(0); }
+    70%  { transform: scale(1) rotate(-4deg) translateY(-1.6px); }
+    100% { transform: scale(1) rotate(-3deg) translateY(-1px); }
+  }
 
   /* ⑭ 伸懒腰：拉长再弹回来，眼睛眯成一条 */
   .qc-bot[data-mood="stretch"] .qc-bot-body { animation: qc-stretch 1.1s cubic-bezier(.34,1.3,.64,1); }
