@@ -397,6 +397,41 @@ ${scripts}
     rec('finished while away clears storage', !window.__local.qcPomo, String(window.__local.qcPomo));
     Q.pomo.stop(true);
 
+    /* 8b. 小动作：翻页 / 计数球 / 投递 / 盖章 / 菜单探头 */
+    var botEl2 = Q.mascot.getEl();
+    rec('fx nodes exist',
+      !!botEl2.querySelector('.qc-bot-pages') && !!botEl2.querySelector('.qc-bot-count') &&
+      !!botEl2.querySelector('.qc-bot-stamp') && !!botEl2.querySelector('.qc-bot-fly') &&
+      !!botEl2.querySelector('.qc-bot-qmark'));
+
+    Q.mascot.setState('thinking');
+    await sleep(50);
+    rec('thinking shows page flip', getComputedStyle(botEl2.querySelector('.qc-bot-pages')).opacity === '1',
+      getComputedStyle(botEl2.querySelector('.qc-bot-pages')).opacity);
+    Q.mascot.setState('idle');
+
+    Q.mascot.countTo(3);
+    await sleep(30);
+    rec('countTo sets number + fx',
+      botEl2.querySelector('.qc-bot-count').textContent === '3' && botEl2.dataset.fx === 'count',
+      botEl2.dataset.fx + '/' + botEl2.querySelector('.qc-bot-count').textContent);
+
+    Q.mascot.flyOut();
+    rec('flyOut raises flag', botEl2.dataset.fly === '1');
+
+    Q.mascot.peekMenu(true);
+    rec('peekMenu on', botEl2.dataset.lookmenu === '1');
+    Q.mascot.peekMenu(false);
+    rec('peekMenu off', !botEl2.dataset.lookmenu);
+
+    Q.mascot.setState('done');
+    await sleep(40);
+    rec('done stamps',
+      getComputedStyle(botEl2.querySelector('.qc-bot-stamp')).animationName === 'qc-stamp',
+      getComputedStyle(botEl2.querySelector('.qc-bot-stamp')).animationName);
+    Q.mascot.setState('idle');
+    await sleep(60);
+
     /* 9. 面板解释卡片 */
     Q.S.explain = { src: '被选中的原文', body: '这是解释正文。', loading: false, error: '' };
     Q.openPanel();

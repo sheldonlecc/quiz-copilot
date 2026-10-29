@@ -370,6 +370,13 @@
       else okCount++;
     });
     const conflictCount = S.questions.filter((q) => q.conflict).length;
+
+    // 头顶弹个数字球 + 飞出去一张小卡片：把「写进页面」这件事演出来
+    if (okCount && Q.mascot) {
+      if (Q.mascot.countTo) Q.mascot.countTo(okCount);
+      if (Q.mascot.flyOut) Q.mascot.flyOut();
+    }
+
     setStatus(
       `已填入 ${okCount} 道题` +
         (conflictCount ? `，${conflictCount} 道答案与解析对不上（面板里标黄，可一键改用解析值）` : '') +

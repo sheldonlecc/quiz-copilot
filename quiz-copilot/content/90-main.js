@@ -88,6 +88,7 @@
       // 自动填开着 → 直接写进页面
       if (!S.autoFill) {
         bot.setState(conflict ? 'warn' : 'done');
+        if (conflict) bot.setMood('confused', 1900);
         bot.say(conflict ? `答完 ${answered} 题，${conflict} 题与解析对不上` : `答完 ${answered} 题，点这里看答案`, 0, true);
         bot.settleAfter(4200);
         return;
@@ -99,6 +100,7 @@
 
       if (st2.fail || conflict) {
         bot.setState('warn');
+        if (conflict) bot.setMood('confused', 1900);
         bot.say(
           conflict
             ? `已填 ${st2.ok}/${total}，${conflict} 题与解析对不上`

@@ -58,7 +58,8 @@
     box-shadow: 0 6px 18px var(--qc-glow), inset 0 1px 0 rgba(255,255,255,.26);
     display: flex; align-items: center; justify-content: center;
     animation: qc-bot-breathe 3.6s ease-in-out infinite;
-    transition: filter .15s, background .38s ease, box-shadow .38s ease;
+    transition: filter .15s, background .38s ease, box-shadow .38s ease,
+                transform .38s cubic-bezier(.34,1.3,.64,1);
   }
   .qc-bot:hover .qc-bot-head { filter: brightness(1.08); }
   .qc-bot-eyes {
@@ -619,10 +620,199 @@
   /* 有帽子时蜘蛛网再往外让一点，别糊在帽檐上 */
   .qc-bot:not([data-hat="none"]) .qc-bot-web { right: -9px; top: -12px; }
 
+  /* ============================================================
+   * 小动作：全部挂在已有事件上，不额外加定时器
+   * 统一走 transform / opacity，时长 0.5-1.6s，回落都带一点过冲
+   * ============================================================ */
+  .qc-bot-pages, .qc-bot-stamp, .qc-bot-count, .qc-bot-fly, .qc-bot-qmark {
+    position: absolute; pointer-events: none; opacity: 0;
+  }
+
+  /* ① 读题：头顶翻三页小纸片 */
+  .qc-bot-pages {
+    top: -5px; left: 50%; margin-left: -10px; width: 20px; height: 12px;
+    perspective: 60px;
+  }
+  .qc-bot-pages i {
+    position: absolute; top: 0; left: 0; width: 13px; height: 9px;
+    background: rgba(255,255,255,.88); border-radius: 2px;
+    transform-origin: 0 50%;
+    box-shadow: 0 1px 2px rgba(0,0,0,.28);
+  }
+  .qc-bot-pages i:nth-child(2) { left: 4px; }
+  .qc-bot-pages i:nth-child(3) { left: 8px; }
+  .qc-bot[data-state="thinking"] .qc-bot-pages { opacity: 1; }
+  .qc-bot[data-state="thinking"] .qc-bot-pages i { animation: qc-page-flip 1.5s ease-in-out infinite; }
+  .qc-bot[data-state="thinking"] .qc-bot-pages i:nth-child(2) { animation-delay: .18s; }
+  .qc-bot[data-state="thinking"] .qc-bot-pages i:nth-child(3) { animation-delay: .36s; }
+
+  @keyframes qc-page-flip {
+    0%   { transform: rotateY(0deg); opacity: .95; }
+    42%  { transform: rotateY(-155deg); opacity: .55; }
+    52%  { transform: rotateY(-155deg); opacity: 0; }
+    100% { transform: rotateY(0deg); opacity: 0; }
+  }
+
+  /* ② 答完一题：头顶弹一个数字球 */
+  .qc-bot-count {
+    top: -11px; right: -3px; min-width: 15px; height: 15px; padding: 0 3px;
+    border-radius: 8px; background: #6ee7a8; color: #0b1220;
+    font-size: 9px; font-weight: 700; line-height: 15px; text-align: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,.35);
+  }
+  .qc-bot[data-fx="count"] .qc-bot-count { animation: qc-count-pop .95s cubic-bezier(.34,1.56,.64,1) both; }
+
+  @keyframes qc-count-pop {
+    0%   { opacity: 0; transform: translateY(5px) scale(.35); }
+    28%  { opacity: 1; transform: translateY(-7px) scale(1.2); }
+    50%  { transform: translateY(-6px) scale(1); }
+    100% { opacity: 0; transform: translateY(-14px) scale(.9); }
+  }
+
+  /* ③ 收工：盖个章 */
+  .qc-bot-stamp {
+    top: 11px; left: 50%; margin-left: -13px; width: 26px; height: 26px;
+    border: 2px solid rgba(110,231,168,.95); border-radius: 50%;
+    box-shadow: 0 0 10px rgba(110,231,168,.45), inset 0 0 6px rgba(110,231,168,.35);
+  }
+  .qc-bot-stamp::after {
+    content: '✓'; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #6ee7a8; font-size: 13px; font-weight: 700;
+  }
+  .qc-bot[data-state="done"] .qc-bot-stamp { animation: qc-stamp .8s cubic-bezier(.34,1.4,.64,1) both; }
+
+  @keyframes qc-stamp {
+    0%   { opacity: 0; transform: scale(1.7) rotate(-14deg); }
+    30%  { opacity: 1; transform: scale(.86) rotate(-6deg); }
+    44%  { transform: scale(1.04) rotate(-6deg); }
+    62%  { transform: scale(1) rotate(-6deg); opacity: 1; }
+    100% { transform: scale(1) rotate(-6deg); opacity: 0; }
+  }
+
+  /* ④ 填进页面：飞走一张小卡片 */
+  .qc-bot-fly {
+    top: 18px; left: 50%; margin-left: -6px; width: 12px; height: 14px;
+    background: rgba(255,255,255,.92); border-radius: 2px;
+    box-shadow: 0 2px 5px rgba(0,0,0,.3);
+  }
+  .qc-bot[data-fly="1"] .qc-bot-fly { animation: qc-fly .85s cubic-bezier(.4,.05,.6,1) both; }
+
+  @keyframes qc-fly {
+    0%   { opacity: 0; transform: translate(0,0) rotate(0) scale(.7); }
+    16%  { opacity: 1; }
+    100% { opacity: 0; transform: translate(-66px,-48px) rotate(-34deg) scale(.16); }
+  }
+
+  /* ⑤ 答案和解析对不上：歪头 + 问号 */
+  .qc-bot-qmark {
+    top: -10px; right: -2px; font-size: 13px; font-weight: 700;
+    color: #ffd98a; text-shadow: 0 1px 3px rgba(0,0,0,.45);
+  }
+  .qc-bot[data-mood="confused"] .qc-bot-qmark { animation: qc-qmark 1.7s ease-out both; }
+  .qc-bot[data-mood="confused"] .qc-bot-head { transform: rotate(12deg); }
+
+  @keyframes qc-qmark {
+    0%   { opacity: 0; transform: translateY(4px) scale(.5); }
+    22%  { opacity: 1; transform: translateY(-2px) scale(1.16); }
+    42%  { transform: translateY(-1px) scale(1) rotate(-7deg); }
+    66%  { transform: translateY(-1px) scale(1) rotate(5deg); }
+    100% { opacity: 0; transform: translateY(-7px) scale(1); }
+  }
+
+  /* ⑥ 跟丢光标：左右找人 */
+  .qc-bot[data-mood="look"] .qc-bot-head { animation: qc-look-around 1.2s ease-in-out; }
+
+  @keyframes qc-look-around {
+    0%, 100% { transform: rotate(0); }
+    22%      { transform: rotate(-7deg); }
+    46%      { transform: rotate(6deg); }
+    68%      { transform: rotate(-3deg); }
+    86%      { transform: rotate(0); }
+  }
+
+  /* ⑦ 被滚屏晃到：后仰再回正 */
+  .qc-bot[data-fx="sway"] .qc-bot-body { animation: qc-sway .5s ease-out; }
+
+  @keyframes qc-sway {
+    0%   { transform: skewX(0) translateY(0); }
+    30%  { transform: skewX(-4deg) translateY(-1px); }
+    62%  { transform: skewX(2deg) translateY(0); }
+    100% { transform: skewX(0) translateY(0); }
+  }
+
+  /* ⑧ 戴帽子：帽子晚 80ms 落下（分层惯性） */
+  .qc-bot[data-fx="wear"] .qc-bot-hat { animation: qc-hat-drop .62s cubic-bezier(.34,1.5,.64,1) .08s both; }
+  .qc-bot[data-fx="wear"] .qc-bot-body { animation: qc-wear-hop .62s ease-out; }
+
+  @keyframes qc-hat-drop {
+    0%   { transform: translateY(-9px) scale(1.06); opacity: .35; }
+    58%  { transform: translateY(1px) scale(.99); opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  @keyframes qc-wear-hop {
+    0%   { transform: translateY(0); }
+    34%  { transform: translateY(-3px); }
+    68%  { transform: translateY(0); }
+    84%  { transform: translateY(-1px); }
+    100% { transform: translateY(0); }
+  }
+
+  /* ⑨ 摸头时耳朵跟着抖 */
+  .qc-bot[data-fx="earflick"] .qc-bot-ears { animation: qc-ear-flick .52s ease-in-out; }
+
+  @keyframes qc-ear-flick {
+    0%, 100% { transform: rotate(0); }
+    24%      { transform: rotate(9deg); }
+    50%      { transform: rotate(-6deg); }
+    76%      { transform: rotate(3deg); }
+  }
+
+  /* ⑩ 围巾一直在飘：只戴着、且闲着的时候 */
+  .qc-bot[data-state="idle"][data-neck="scarf"] .qc-bot-neck { animation: qc-scarf 3.4s ease-in-out infinite; }
+
+  @keyframes qc-scarf {
+    0%, 100% { transform: skewX(0) translateX(0); }
+    34%      { transform: skewX(-4deg) translateX(-1px); }
+    70%      { transform: skewX(3deg) translateX(1px); }
+  }
+
+  /* ⑪ 被挠痒 */
+  .qc-bot[data-fx="tickle"] .qc-bot-body { animation: qc-tickle .55s ease-in-out; }
+
+  @keyframes qc-tickle {
+    0%, 100% { transform: translateX(0) scale(1); }
+    20%      { transform: translateX(-3px) scale(.97); }
+    46%      { transform: translateX(3px) scale(1.02); }
+    72%      { transform: translateX(-2px) scale(.99); }
+  }
+
+  /* ⑫ 菜单弹出：探头看一眼（菜单本来就在它左边，不用挪位置） */
+  .qc-bot[data-lookmenu="1"] .qc-bot-head { transform: rotate(-9deg) translateY(-1px); }
+
+  /* ⑬ 偷看头顶的计时牌：眼睛上瞟一下 */
+  .qc-bot[data-mood="peek"] .qc-bot-eye { transform: translateY(-2px); }
+  .qc-bot[data-mood="peek"] .qc-bot-head { transform: rotate(-3deg) translateY(-1px); }
+
+  /* ⑭ 伸懒腰：拉长再弹回来，眼睛眯成一条 */
+  .qc-bot[data-mood="stretch"] .qc-bot-body { animation: qc-stretch 1.1s cubic-bezier(.34,1.3,.64,1); }
+  .qc-bot[data-mood="stretch"] .qc-bot-eye { width: 7px; height: 2.5px; border-radius: 2px; }
+
+  @keyframes qc-stretch {
+    0%   { transform: scale(1, 1); }
+    30%  { transform: scale(.97, 1.06) translateY(-1px); }
+    56%  { transform: scale(1.01, .99); }
+    76%  { transform: scale(1, 1.01); }
+    100% { transform: scale(1, 1); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .qc-bot-body, .qc-bot-head, .qc-bot-eyes, .qc-bot-eye,
     .qc-bot-antenna::after, .qc-bot-tick path, .qc-bot-zzz i,
-    .qc-bot-heart, .qc-bot-spiral, .qc-bot-spiral svg { animation: none !important; }
+    .qc-bot-heart, .qc-bot-spiral, .qc-bot-spiral svg,
+    .qc-bot-pages i, .qc-bot-stamp, .qc-bot-count, .qc-bot-fly, .qc-bot-qmark,
+    .qc-bot-hat, .qc-bot-ears, .qc-bot-neck { animation: none !important; }
+    .qc-bot-pages { opacity: 0 !important; }
     .qc-bot[data-state="done"] .qc-bot-tick path,
     .qc-bot[data-state="warn"] .qc-bot-tick path { stroke-dashoffset: 0; }
     .qc-bot[data-mood="sleepy"] .qc-bot-zzz i { opacity: .92; }
@@ -774,6 +964,11 @@
     '<span class="qc-bot-neck">' + NECK_HTML + '</span>' +
     '<span class="qc-bot-hat">' + HAT_HTML + '</span>' +
     '<span class="qc-bot-web">' + WEB_SVG + '</span>' +
+    '<span class="qc-bot-pages"><i></i><i></i><i></i></span>' +
+    '<span class="qc-bot-count"></span>' +
+    '<span class="qc-bot-stamp"></span>' +
+    '<span class="qc-bot-fly"></span>' +
+    '<span class="qc-bot-qmark">?</span>' +
     '<svg class="qc-bot-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5 L10 17 L18.5 7.5"/></svg>' +
     '</span></span>' +
     '<span class="qc-ball"><i></i></span>' +
@@ -831,6 +1026,7 @@
   let tailTimer = null;
   let sleepTimer = null;
   let yawnTimer = null;
+  let peekTimer = null;   // 闲着的时候偷看一眼头顶的计时牌
   let hoverTimer = null;
   let webTimer = null;
   let drag = null;
@@ -852,6 +1048,8 @@
   let tapCount = 0;
   let doublePlayed = false;
   let lastTapAt = 0;
+  let lastTapY = 0;   // 上一次点在自己的哪个高度（判断是不是点在肚子上）
+  let lastTapH = 0;
   let petSamples = [];
   let petting = false;
   let petEndTimer = null;
@@ -1112,6 +1310,7 @@
       petting = true;
       stopHover();
       setMood('pet', 0);
+      if (getWear().ears !== 'none') playFx('earflick', 520);
       say(L('pet', '嘿嘿…'), 0, false);
       lastPetSay = Date.now();
     } else if (Date.now() - lastPetSay > 2600) {
@@ -1350,11 +1549,16 @@
     say(L('triple', '戳我干嘛…'), 1300, false);
   }
 
-  /* 双击：蹦一下 + 开心，不当成一键解题 */
+  /* 双击：蹦一下 + 开心，不当成一键解题；点在下半身就变成「挠痒」 */
   function doubleTap() {
     if (!el) return;
     hop();
     if (el.dataset.state === 'idle') setMood('happy', 800);
+    if (lastTapH && lastTapY > lastTapH * 0.62) {
+      playFx('tickle', 560);
+      say(L('tickle', '痒！别挠那儿'), 1100, false);
+      return;
+    }
     say(L('double', '嘿嘿'), 900, false);
   }
 
@@ -1455,6 +1659,7 @@
   /* ---------- 悬停 ---------- */
   function onEnter() {
     if (!el) return;
+    cancelLook();
     if (el.dataset.state === 'idle' && !bubbleTimer) say(L('hover', '点我一键解题'), 0, false);
     if (el.dataset.state === 'idle' && !el.dataset.mood) setMood('happy', 1400);
     clearWeb();
@@ -1468,6 +1673,7 @@
     if (el.dataset.state !== 'idle') return;
     if (!bubbleTimer) say('', 0, false);
     if (el.dataset.mood === 'happy') clearMood();
+    armLook();
   }
 
   /* 鼠标在它身上划线：摸头判定 + 顺手把灰抖掉 */
@@ -1498,6 +1704,12 @@
       const m = pickMood();
       if (m) setMood(m.k, m.ms);
     }, 5200);
+    // 闲着没事，偷看一眼头顶的计时牌（像在等下班）
+    peekTimer = setTimeout(() => {
+      peekTimer = null;
+      if (!el || drag || el.dataset.state !== 'idle' || el.dataset.mood) return;
+      setMood('peek', 900);
+    }, 30000);
     // 快睡着之前先打个哈欠，别「啪」一下就睡过去
     yawnTimer = setTimeout(() => {
       yawnTimer = null;
@@ -1520,6 +1732,7 @@
     if (idleTimer) { clearInterval(idleTimer); idleTimer = null; }
     if (sleepTimer) { clearTimeout(sleepTimer); sleepTimer = null; }
     if (yawnTimer) { clearTimeout(yawnTimer); yawnTimer = null; }
+    if (peekTimer) { clearTimeout(peekTimer); peekTimer = null; }
   }
 
   /* ---------- 表情 ---------- */
@@ -1566,6 +1779,87 @@
     }
   }
 
+  /* ---------- 一次性小动作：都挂在已有事件上，不新增轮询 ---------- */
+  let fxTimer = null;
+  let lookTimer = null;
+
+  /* name 对应 CSS 里的 [data-fx="..." ]，到点自己摘掉 */
+  function playFx(name, ms) {
+    if (!el || !name || prefersReduced()) return;
+    if (fxTimer) clearTimeout(fxTimer);
+    el.dataset.fx = name;
+    fxTimer = setTimeout(() => {
+      fxTimer = null;
+      if (el && el.dataset.fx === name) delete el.dataset.fx;
+    }, ms || 900);
+  }
+
+  /* 答完几题，头顶就弹个数字球 */
+  function countTo(n) {
+    if (!el) return;
+    const box = el.querySelector('.qc-bot-count');
+    if (box) box.textContent = String(n);
+    playFx('count', 950);
+  }
+
+  /* 把答案「投递」出去：和数字球同时播，所以单独用一个属性 */
+  let flyTimer = null;
+  function flyOut() {
+    if (!el || prefersReduced()) return;
+    el.dataset.fly = '1';
+    if (flyTimer) clearTimeout(flyTimer);
+    flyTimer = setTimeout(() => {
+      flyTimer = null;
+      if (el) delete el.dataset.fly;
+    }, 860);
+  }
+
+  /* 菜单弹出时探个头看它一眼（菜单在左边，不用挪位置） */
+  function peekMenu(on) {
+    if (!el) return;
+    if (on) el.dataset.lookmenu = '1';
+    else delete el.dataset.lookmenu;
+  }
+
+  /* 光标走开一会儿才「找人」，马上回来就不播 */
+  function cancelLook() {
+    if (lookTimer) {
+      clearTimeout(lookTimer);
+      lookTimer = null;
+    }
+  }
+
+  function armLook() {
+    cancelLook();
+    if (prefersReduced()) return;
+    lookTimer = setTimeout(() => {
+      lookTimer = null;
+      if (!el || drag || tracking || el.dataset.state !== 'idle' || el.dataset.mood) return;
+      setMood('look', 1200);
+    }, 1500);
+  }
+
+  /* 页面滚动：晃一下，1.5 秒内只晃一次 */
+  let lastSwayAt = 0;
+  function onScroll() {
+    if (!el || drag || el.dataset.state !== 'idle' || prefersReduced()) return;
+    const now = Date.now();
+    if (now - lastSwayAt < 1500) return;
+    lastSwayAt = now;
+    playFx('sway', 520);
+  }
+
+  /* 切出去再回来：伸个懒腰；要是睡过去了，先醒 */
+  function onVisible() {
+    if (!el || document.visibilityState !== 'visible') return;
+    if (el.dataset.state !== 'idle') return;
+    if (el.dataset.mood === 'sleepy') {
+      wake();
+      return;
+    }
+    setMood('stretch', 1150);
+  }
+
   /* ---------- 被戳烦了 ---------- */
   function poke() {
     const now = Date.now();
@@ -1600,6 +1894,11 @@
       e.preventDefault();
       if (suppressClick) return;
       if (el && el.dataset.busy === '1') return;   // 正在滚过去，别打断
+
+      // 记一下点在哪：双击下半身 = 挠痒，其余还是「蹦一下」
+      const tapBox = btn.getBoundingClientRect();
+      lastTapY = e.clientY - tapBox.top;
+      lastTapH = tapBox.height;
 
       // 刚被摸完头就被点一下：只当收手，别把「摸头」变成「解题」
       if (petting) { endPet(true); return; }
@@ -1691,6 +1990,9 @@
     try {
       window.addEventListener('resize', onResize, { passive: true });
       window.addEventListener('pointermove', onWindowMove, { passive: true });
+      // 滚动事件不冒泡，用 capture 才收得到页面里那些滚动容器
+      window.addEventListener('scroll', onScroll, { passive: true, capture: true });
+      document.addEventListener('visibilitychange', onVisible);
     } catch (e) {}
 
     restorePos();
@@ -1809,12 +2111,17 @@
     petSamples = [];
     sweepSamples = [];
     webOn = false;
+    if (fxTimer) { clearTimeout(fxTimer); fxTimer = null; }
+    if (flyTimer) { clearTimeout(flyTimer); flyTimer = null; }
+    cancelLook();
     if (rafId && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(rafId);
     rafId = 0;
     dragSamples = [];
     try {
       window.removeEventListener('resize', onResize);
       window.removeEventListener('pointermove', onWindowMove);
+      window.removeEventListener('scroll', onScroll, { capture: true });
+      document.removeEventListener('visibilitychange', onVisible);
     } catch (e) {}
     drag = null;
     if (el && el.isConnected) el.remove();
@@ -1859,8 +2166,12 @@
   }
 
   function setWear(w, opts) {
+    const before = getWear();
     Q.S.botWear = normWear(w);
     applyWear();
+    // 换帽子才播「扶帽」，只换耳朵就抖个耳朵
+    if (before.hat !== Q.S.botWear.hat) playFx('wear', 760);
+    else if (before.ears !== Q.S.botWear.ears) playFx('earflick', 520);
     if (!opts || opts.save !== false) {
       try { chrome.storage.sync.set({ botWear: Q.S.botWear }); } catch (e) {}
     }
@@ -1880,5 +2191,5 @@
     };
   }
 
-  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, rollTo, rollHome, growWeb, clearWeb, armWeb: scheduleWeb, setWebRetry: (ms) => { webRetry = Math.max(20, Number(ms) || WEB_RETRY); }, webAfter: () => WEB_AFTER, wanderOnce: wander, setSkin, nextSkin, setWear, getWear, randomWear, WEAR_ITEMS, WEAR_CN, BOT_INNER, getEl: () => el, CSS, SKINS };
+  Q.mascot = { mount, getState, setState, setMood, say, settleAfter, show, destroy, moveTo, hop, rollTo, rollHome, growWeb, clearWeb, armWeb: scheduleWeb, setWebRetry: (ms) => { webRetry = Math.max(20, Number(ms) || WEB_RETRY); }, webAfter: () => WEB_AFTER, wanderOnce: wander, setSkin, nextSkin, setWear, getWear, randomWear, WEAR_ITEMS, WEAR_CN, BOT_INNER, getEl: () => el, CSS, SKINS, playFx, countTo, flyOut, peekMenu };
 })();

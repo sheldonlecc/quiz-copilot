@@ -264,6 +264,7 @@
     el.style.left = Math.max(M, left) + 'px';
     el.style.top = top + 'px';
     el.style.transformOrigin = left < r.left ? '100% 100%' : '0 100%';
+    if (Q.mascot && Q.mascot.peekMenu) Q.mascot.peekMenu(true);
 
     requestAnimationFrame(() => {
       if (menuEl) menuEl.dataset.show = '1';
@@ -284,6 +285,7 @@
   }
 
   function close() {
+    if (Q.mascot && Q.mascot.peekMenu) Q.mascot.peekMenu(false);
     if (downHandler) {
       window.removeEventListener('pointerdown', downHandler, true);
       downHandler = null;
